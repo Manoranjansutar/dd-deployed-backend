@@ -21,7 +21,7 @@ mongoose
   })
   .then(() => console.log("DB is Connected"))
   .catch(() => console.log("DB is not Connected"));
-
+// require('./Controller/migration')
 //Admin
 const login = require("./Routes/Admin/AdminLogin");
 const HomeBanner = require("./Routes/Admin/HomeBanner");
