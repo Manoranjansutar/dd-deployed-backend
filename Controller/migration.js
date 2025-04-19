@@ -8,7 +8,7 @@ async function migrateData() {
         // Define connection string
         const uri = "mongodb+srv://Amit:j3PXKe1c476eTEkq@cluster0.oc3irxx.mongodb.net/DailyDish?retryWrites=true&w=majority&appName=Cluster0";
         
-        const filePath = path.join(__dirname, 'mongo-dailydishbangalo_dd-20250324-161132.js');
+        const filePath = path.join(__dirname, 'mongo-dailydishbangalo_dd-20250413-174139.js');
         console.log('Current working directory:', process.cwd());
         console.log('Attempting to read file at:', filePath);
 

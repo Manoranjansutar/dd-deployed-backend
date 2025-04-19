@@ -1,6 +1,6 @@
 const CustomerModel = require("../../Model/User/Userlist");
 const CartModel=require('../../Model/User/Cart');
-
+const cron = require('node-cron');
 
 
 class Cart{
@@ -69,6 +69,11 @@ class Cart{
 
     async getAllcartaddon(req,res){
         try {
+          const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
+          const deletedCarts = await CartModel.deleteMany({
+              lastUpdated: { $lt: cutoffTime }
+          });
+          console.log(`Deleted ${deletedCarts.deletedCount} abandoned carts older than 24 hours`);
         let data=await CartModel.find().sort({_id:-1});
         // console.log(data)
         return res.status(200).json({success:data});
@@ -77,6 +82,8 @@ class Cart{
         }
     }
 }
+
+
 module.exports=new Cart();
 // API Routes
 

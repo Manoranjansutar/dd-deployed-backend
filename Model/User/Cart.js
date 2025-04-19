@@ -24,7 +24,7 @@ const cartSchema = new mongoose.Schema({
       type:String,
       default:"Added"
     }
-});
+},{timestamps:true});
 
 // Pre-save hook to generate a unique cart ID
 cartSchema.pre('save', async function (next) {
