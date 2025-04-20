@@ -124,19 +124,17 @@ exports.initializeWallet = async (userId) => {
 exports.getWallet = async (req, res) => {
   try {
     const userId = req.params.userId;
-    
-    // Validate userId
+
     if (!userId) {
       return res.status(400).json({
         success: false,
         message: "User ID is required",
       });
     }
-    
+
     let wallet = await Wallet.findOne({ userId });
-    
+
     if (!wallet) {
-      // Return a default wallet with 0 balance
       return res.status(200).json({
         success: true,
         data: {
@@ -144,33 +142,28 @@ exports.getWallet = async (req, res) => {
         },
       });
     } else {
-      // Check for expired free cash and update balance
       const currentDate = new Date();
-      
-      // Instead of checking each transaction, find transactions that meet all criteria
-      // and haven't been processed for expiry yet
-      const expiredTransactions = wallet.transactions.filter(transaction => 
+
+      const expiredTransactions = wallet.transactions.filter(transaction =>
         transaction.isFreeCash &&
         transaction.type === "credit" &&
         transaction.expiryDate &&
-        transaction.expiryDate < currentDate &&
-        !transaction.expiredProcessed // Use a different flag name to ensure it's unique
+        new Date(transaction.expiryDate) < currentDate &&
+        !transaction.expiredProcessed
       );
-      
-      // Calculate total expired amount
-      const expiredAmount = expiredTransactions.reduce((total, transaction) => 
-        total + transaction.amount, 0);
-      
+
+      const expiredAmount = expiredTransactions.reduce((total, transaction) =>
+        total + Math.abs(transaction.amount), 0);
+
+      console.log("Expired Amount:", expiredAmount);
+
       if (expiredAmount > 0 && wallet.balance >= expiredAmount) {
-        // Mark all expired transactions as processed to avoid double counting
         expiredTransactions.forEach(transaction => {
           transaction.expiredProcessed = true;
         });
-        
-        // Create a unique reference ID for this expiry batch
+
         const expiryReference = `exp-${Date.now()}-${userId}`;
-        
-        // Add the debit transaction
+
         wallet.balance -= expiredAmount;
         wallet.transactions.push({
           amount: expiredAmount,
@@ -179,23 +172,22 @@ exports.getWallet = async (req, res) => {
           isFreeCash: true,
           createdAt: currentDate,
           expiryReference: expiryReference,
-          expiredProcessed: true // Mark as already processed
+          expiredProcessed: true
         });
-        
-        // Save changes to database explicitly with a wait
+
         await wallet.save();
-        
-        // Fetch the updated wallet to ensure we have the latest data
+
         wallet = await Wallet.findOne({ userId });
       }
     }
-    
-    // Get wallet settings with fallback values
+
     const settings = await WalletSettings.findOne() || {
       minCartValueForWallet: 0,
       maxWalletUsagePerOrder: 100,
     };
-    wallet.balance=Number.isInteger(wallet.balance) ? wallet.balance : wallet.balance.toFixed(2);
+
+    wallet.balance = Number.isInteger(wallet.balance) ? wallet.balance : wallet.balance.toFixed(2);
+
     return res.status(200).json({
       success: true,
       data: {
@@ -208,21 +200,21 @@ exports.getWallet = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching wallet:", error);
-    
-    // More specific error handling
+
     if (error.name === "CastError") {
       return res.status(400).json({
         success: false,
         message: "Invalid user ID format",
       });
     }
-    
+
     return res.status(500).json({
       success: false,
       message: "Failed to fetch wallet",
     });
   }
 };
+
 
 exports.getAllWallets = async (req, res) => {
   try {
