@@ -7,10 +7,10 @@ const customerorderSchema = new mongoose.Schema(
       type: ObjectId,
       ref: "customers",
     },
-    cartId:{
+    cartId: {
       type: String,
     },
-    cart_id:{
+    cart_id: {
       type: String,
     },
     allProduct: [
@@ -27,22 +27,33 @@ const customerorderSchema = new mongoose.Schema(
         },
       },
     ],
+    rate: {
+      type: Number,
+      default: 0
+    },
+    ratted: {
+      type: Boolean,
+      default: false
+    },
+    comement:{
+      type:String
+    },
     Cutlery: {
       type: String,
     },
     Placedon: {
       type: String,
     },
-    couponId:{
-      type:String  
+    couponId: {
+      type: String
     },
-    coupon:{
-        type:Number,
-        default:0
+    coupon: {
+      type: Number,
+      default: 0
     },
-    discountWallet:{
-        type:Number,
-        default:0
+    discountWallet: {
+      type: Number,
+      default: 0
     },
     slot: {
       type: String,
@@ -53,7 +64,7 @@ const customerorderSchema = new mongoose.Schema(
     orderdelivarytype: {
       type: String,
     },
-    approximatetime:{
+    approximatetime: {
       type: String,
     },
     delivarylocation: {
@@ -85,49 +96,49 @@ const customerorderSchema = new mongoose.Schema(
 
     subTotal: {
       type: Number,
-     
+
     },
     allTotal: {
       type: Number,
-    
+
     },
     foodtotal: {
       type: Number,
-    
+
     },
-    apartment:{
-         type: String,
+    apartment: {
+      type: String,
     },
-    prefixcode:{
-         type: String,
+    prefixcode: {
+      type: String,
     },
-       orderid:{
-         type: String,
+    orderid: {
+      type: String,
     },
     tax: {
       type: Number,
     },
-    deliveryMethod:{
-     type: String,
+    deliveryMethod: {
+      type: String,
     },
     orderId: {
       type: String,
     },
     reasonforcancel: {
       type: String,
-   },
+    },
     status: {
       type: String,
       default: "Cooking",
       enum: [
-          "inprocess",
-          "Cooking",
-          "Packing",
-          "Ontheway",
-          "Delivered",
-          "Undelivered",
-          "Returned",
-          "Cancelled",
+        "inprocess",
+        "Cooking",
+        "Packing",
+        "Ontheway",
+        "Delivered",
+        "Undelivered",
+        "Returned",
+        "Cancelled",
       ],
     },
   },

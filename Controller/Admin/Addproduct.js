@@ -29,14 +29,14 @@ class AddRestaurantdata {
 
     // Check if files are uploaded and process them for Foodgallery
     if (req.files && req.files.length > 0) {
-      let files=req.files
+      let files = req.files
       for (let i = 0; i < files.length; i++) {
-   
+
         if (files[i].fieldname.startsWith("Foodgallery")) {
-          Foodgallery.push({ image2: await uploadFile2(files[i],"Product"), });
+          Foodgallery.push({ image2: await uploadFile2(files[i], "Product"), });
         }
 
-    }
+      }
     }
 
     try {
@@ -106,26 +106,26 @@ class AddRestaurantdata {
       if (!userid) {
         return res.status(400).json({ error: "User ID is required" });
       }
- 
+
       // Object to hold update fields
-      let obj = {Priority};
-    let Foodgallery = [];
+      let obj = { Priority };
+      let Foodgallery = [];
 
-    // Check if files are uploaded and process them for Foodgallery
-    if (req.files && req.files.length > 0) {
-      let files=req.files
-      for (let i = 0; i < files.length; i++) {
-   
-        if (files[i].fieldname.startsWith("Foodgallery")) {
-          Foodgallery.push({ image2: await uploadFile2(files[i],"Product"), });
+      // Check if files are uploaded and process them for Foodgallery
+      if (req.files && req.files.length > 0) {
+        let files = req.files
+        for (let i = 0; i < files.length; i++) {
+
+          if (files[i].fieldname.startsWith("Foodgallery")) {
+            Foodgallery.push({ image2: await uploadFile2(files[i], "Product"), });
+          }
+
         }
+      }
 
-    }
-    }
-    
-    if(Foodgallery.length>0){
-        obj["Foodgallery"]=Foodgallery
-    }
+      if (Foodgallery.length > 0) {
+        obj["Foodgallery"] = Foodgallery
+      }
       // Dynamically add fields to the update object if they are provided
       if (foodname) obj["foodname"] = foodname;
       if (foodcategory) obj["foodcategory"] = foodcategory;
@@ -145,7 +145,7 @@ class AddRestaurantdata {
       if (quantity) obj["quantity"] = quantity;
       if (loaddate) obj["loaddate"] = loaddate;
       if (loadtime) obj["loadtime"] = loadtime;
- 
+
       // Find food item by ID and update
       let data = await AddRestaurants.findByIdAndUpdate(
         { _id: userid },
@@ -153,12 +153,12 @@ class AddRestaurantdata {
         { new: true }
       );
       console.log("data", data);
- 
+
       // If the food item is not found
       if (!data) {
         return res.status(400).json({ error: "Food item not found or update failed" });
       }
- 
+
       // Return success response with the updated food item data
       return res.status(200).json({
         success: "Update successfully",
@@ -172,11 +172,21 @@ class AddRestaurantdata {
       });
     }
   }
- 
+
+  async makeSoldout(req, res) {
+    try {
+      let data = await AddRestaurants.updateMany({ $set: { Remainingstock: 0 } });
+      return res.status(200).json({ success: "Successfully sold out" })
+
+    } catch (error) {
+      console.log(error);
+
+    }
+  }
 
   async getFoodItems(req, res) {
     try {
-      const restaurant = await AddRestaurants.find({}).sort({_id:-1})
+      const restaurant = await AddRestaurants.find({}).sort({ _id: -1 })
 
       if (!restaurant) {
         return res.status(404).json({ error: "Restaurant not found" });
@@ -188,10 +198,10 @@ class AddRestaurantdata {
       return res.status(500).json({ error: "Internal Server Error" });
     }
   }
-  
-   async getFoodItemsUnBlocks(req, res) {
+
+  async getFoodItemsUnBlocks(req, res) {
     try {
-      const restaurant = await AddRestaurants.find({blocked:false}).sort({Priority:1})
+      const restaurant = await AddRestaurants.find({ blocked: false }).sort({ Priority: 1 })
 
       if (!restaurant) {
         return res.status(404).json({ error: "Restaurant not found" });
@@ -203,7 +213,7 @@ class AddRestaurantdata {
       return res.status(500).json({ error: "Internal Server Error" });
     }
   }
-  
+
 
   async deleteFoodItem(req, res) {
     try {
@@ -333,32 +343,32 @@ class AddRestaurantdata {
       return res.status(500).json({ error: "Internal Server Error" });
     }
   }
-  
-  
-async updateFoodStocks(req, res) {
+
+
+  async updateFoodStocks(req, res) {
     try {
-      const {data} = req.body;
-      console.log("parsed",data)
-      
-    if (!data || !Array.isArray(data)) {
-      return res.status(400).json({ error: "Invalid data format. Expecting an array." });
-    }
-   
-     const bulkOps = data.map((item) => ({
-      updateOne: {
-        filter: { _id: item._id }, // Match by _id
-        update: { $set: item }, // Update with the new data
-      },
-    }));
-   
-       // Execute the bulk write
-    const result = await AddRestaurants.bulkWrite(bulkOps);
-    
-     return res.status(200).json({
-      success: "Food stocks updated successfully",
-      result, // Information about the operation
-    });
-   
+      const { data } = req.body;
+      console.log("parsed", data)
+
+      if (!data || !Array.isArray(data)) {
+        return res.status(400).json({ error: "Invalid data format. Expecting an array." });
+      }
+
+      const bulkOps = data.map((item) => ({
+        updateOne: {
+          filter: { _id: item._id }, // Match by _id
+          update: { $set: item }, // Update with the new data
+        },
+      }));
+
+      // Execute the bulk write
+      const result = await AddRestaurants.bulkWrite(bulkOps);
+
+      return res.status(200).json({
+        success: "Food stocks updated successfully",
+        result, // Information about the operation
+      });
+
 
     } catch (error) {
       console.log("Error updating food item:", error);
@@ -368,7 +378,7 @@ async updateFoodStocks(req, res) {
       });
     }
   }
-  
+
 
 }
 

@@ -26,5 +26,5 @@ router.put("/addFoodItemnewImage",upload.any(), Restocontroller.addFoodItemnewIm
 
 router.put("/toggleFoodItemStatus/:id", Restocontroller.toggleFoodItemStatus);
 router.put("/toggleFoodItemApproval/:id", Restocontroller.toggleFoodItemApproval);
-
+router.put("/makeSoldout",Restocontroller.makeSoldout);
 module.exports = router;

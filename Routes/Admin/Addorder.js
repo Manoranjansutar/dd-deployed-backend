@@ -9,4 +9,7 @@ router.get("/getallordersbyUserId/:id",CartController.getallordersbyUserId);
 router.get("/getallorders",CartController.getallorders);
 router.put("/updateOrderStatus/:id",CartController.updateOrderStatus);
 router.delete("/deletefoodorder/:id",CartController.deletefoodorder);
+router.get("/getorderNotRatedByUserID/:customerId",CartController.getorderNotRatedByUserID);
+router.put("/makeRateOfOrder",CartController.makeRateOfOrder);
+// router.put("/makeSoldout",CartController)
 module.exports=router;

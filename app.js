@@ -48,7 +48,7 @@ const SelectedAddress = require("./Routes/User/SelectedAddress");
 const paymentRoute = require("./Routes/User/phonepay");
 const Addcart = require("./Routes/User/Cart");
 const Wallet=require('./Routes/User/Wallet');
-
+const CloseShop=require('./Routes/Admin/Resturant')
 //Admin
 app.use("/api/admin", login);
 app.use("/api/admin", HomeBanner);
@@ -66,6 +66,7 @@ app.use("/api/admin", Social);
 app.use("/api/admin", LiveStream);
 app.use("/api/admin", Gst);
 app.use("/api/admin", Coupon);
+app.use("/api/admin", CloseShop);
 
 //User
 app.use("/api/user", paymentRoute);
