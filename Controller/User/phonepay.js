@@ -42,7 +42,7 @@ class Transaction{
         merchantUserId: userId,
         amount: amount*100,
         redirectUrl:  `https://dailydish.in/payment-success?transactionId=${data._id}&userID=${userId}`,
-        redirectMode: "POST",
+        redirectMode: "GET",
         callbackUrl: "https://dailydish.in/api/user/payment-callback",
         mobileNumber: Mobile,
         paymentInstrument: {
