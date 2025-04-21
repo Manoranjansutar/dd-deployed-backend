@@ -190,7 +190,7 @@ async makepayment(req, res) {
       merchantUserId: merchantUserId,
       amount: amount,
       redirectUrl: CALLBACK_URL,
-      redirectMode: "POST",
+      redirectMode: "GET",
       callbackUrl: callbackUrl,
       mobileNumber: mobileNumber,
       paymentInstrument: {
