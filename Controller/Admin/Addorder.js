@@ -1,6 +1,7 @@
 const customerCartModel = require('../../Model/Admin/Addorder');
 const ProductModel = require('../../Model/Admin/Addproduct');
 const CouponModel = require("../../Model/Admin/Coupon");
+const UserModel=require('../../Model/User/Userlist')
 const { default: mongoose } = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 const { default: axios } = require("axios");
@@ -301,7 +302,10 @@ class customerCart {
   async getorderNotRatedByUserID(req, res) {
     try {
       const { customerId } = req.params;
-
+      await UserModel.findOneAndUpdate(
+        { _id: customerId },
+        { $set: { lastLogin: new Date().toISOString().split('T')[0] } }
+      );
       // Find the order by orderId
       const order = await customerCartModel.findOne({ customerId: customerId, ratted: false, status: "Delivered" }).populate("allProduct.foodItemId");
 

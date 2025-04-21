@@ -50,6 +50,9 @@ const Customer = new Schema(
     lastorderamount: {
       type: Number,
     },
+    lastLogin:{
+      type:String,
+    }
     
   },
   { timestamps: true }
