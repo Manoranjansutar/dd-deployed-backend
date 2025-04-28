@@ -126,9 +126,11 @@ exports.getWallet = async (req, res) => {
     const userId = req.params.userId;
 
     if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "User ID is required",
+      return res.status(200).json({
+        success: true,
+        data: {
+          wallet: { balance: 0, transactions: [] },
+        },
       });
     }
 
@@ -138,55 +140,71 @@ exports.getWallet = async (req, res) => {
       return res.status(200).json({
         success: true,
         data: {
-          wallet: { balance: 0 },
+          wallet: { balance: 0, transactions: [] },
         },
       });
-    } else {
-      const currentDate = new Date();
+    }
 
-      const expiredTransactions = wallet.transactions.filter(transaction =>
+    const currentDate = new Date();
+
+    // Filter expired free cash transactions that haven't been processed
+    const expiredTransactions = wallet.transactions.filter(
+      (transaction) =>
         transaction.isFreeCash &&
         transaction.type === "credit" &&
         transaction.expiryDate &&
         new Date(transaction.expiryDate) < currentDate &&
         !transaction.expiredProcessed
-      );
+    );
 
-      const expiredAmount = expiredTransactions.reduce((total, transaction) =>
-        total + Math.abs(transaction.amount), 0);
+    // Calculate total expired amount
+    const expiredAmount = expiredTransactions.reduce(
+      (total, transaction) => total + Math.abs(transaction.amount),
+      0
+    );
 
-      console.log("Expired Amount:", expiredAmount);
+    console.log("Expired Amount:", expiredAmount);
 
-      if (expiredAmount > 0 && wallet.balance >= expiredAmount) {
-        expiredTransactions.forEach(transaction => {
+    // Process expired transactions if any exist
+    if (expiredAmount > 0) {
+      // Only deduct what's available to prevent negative balance
+      const deductibleAmount = Math.min(expiredAmount, wallet.balance);
+
+      if (deductibleAmount > 0) {
+        // Mark expired transactions as processed
+        expiredTransactions.forEach((transaction) => {
           transaction.expiredProcessed = true;
         });
 
-        const expiryReference = `exp-${Date.now()}-${userId}`;
-
-        wallet.balance -= expiredAmount;
+        // Add debit transaction for expired amount
+        wallet.balance -= deductibleAmount;
         wallet.transactions.push({
-          amount: expiredAmount,
+          amount: deductibleAmount,
           type: "debit",
           description: "Expired free cash",
           isFreeCash: true,
           createdAt: currentDate,
-          expiryReference: expiryReference,
-          expiredProcessed: true
+          expiredProcessed: true,
         });
 
+        // Save updated wallet
         await wallet.save();
 
+        // Refresh wallet data
         wallet = await Wallet.findOne({ userId });
       }
     }
 
+    // Get wallet settings
     const settings = await WalletSettings.findOne() || {
       minCartValueForWallet: 0,
       maxWalletUsagePerOrder: 100,
     };
 
-    wallet.balance = Number.isInteger(wallet.balance) ? wallet.balance : wallet.balance.toFixed(2);
+    // Format balance to avoid floating-point issues
+    wallet.balance = Number.isInteger(wallet.balance)
+      ? wallet.balance
+      : Number(wallet.balance.toFixed(2));
 
     return res.status(200).json({
       success: true,
@@ -269,13 +287,20 @@ exports.addFreeCash = async (req, res) => {
     }
     console.log("expiryDays",expiryDays)
     // Get wallet settings
-    const settings = await WalletSettings.findOne();
+let expiryDate
+    if(expiryDays){
+      expiryDate = new Date(expiryDays);
+    }else{
+       const settings = await WalletSettings.findOne();
 
     // Calculate expiry date
-    const expiryDate = new Date();
+     expiryDate = new Date();
+    
     expiryDate.setDate(
       expiryDate.getDate() + (expiryDays || settings.defaultFreeCashExpiryDays)
     );
+    }
+   
 
     // Find or create wallet
     let wallet = await Wallet.findOne({ userId });
