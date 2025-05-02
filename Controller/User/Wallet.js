@@ -278,7 +278,7 @@ exports.addwalletSetiitn = async (req, res) => {
 exports.addFreeCash = async (req, res) => {
   try {
     const { userId, amount, description, expiryDays } = req.body;
-
+console.log("check",userId, amount, description, expiryDays)
     if (!userId || !amount || amount <= 0) {
       return res.status(400).json({
         success: false,
@@ -305,7 +305,7 @@ let expiryDate
     // Find or create wallet
     let wallet = await Wallet.findOne({ userId });
     if (!wallet) {
-          wallet = await  Wallet.create({userId,transactions:[],balance:0});
+          wallet = await  Wallet.create({userId:userId});
     }
 
     // Add transaction
@@ -335,6 +335,7 @@ let expiryDate
     });
   }
 };
+
 exports.deductAmout = async (req, res) => {
   try {
     const { userId, amount, description, expiryDays } = req.body;
