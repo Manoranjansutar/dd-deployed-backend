@@ -111,6 +111,10 @@ class customerCart {
       discountWallet,
       cartId,
       cart_id,
+      companyId,
+      companyName,
+     
+
     } = req.body;
 
     // console.log("deli",deliveryMethod)
@@ -150,6 +154,8 @@ class customerCart {
         status, cartId,
         discountWallet,
         cart_id,
+        companyId,
+        companyName,
       });
 
       if (!customerId) {
@@ -430,6 +436,21 @@ class customerCart {
     }
   }
 
+  async getAllOrderByCompany(req, res) {
+    try {
+      const { companyId } = req.params;
+
+      const orders = await customerCartModel.find({ companyId:companyId }).populate("customerId").populate("allProduct.foodItemId").sort({ _id: -1 });
+
+
+     return res.status(200).json({
+        message: "Orders retrieved successfully",
+        orders,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to retrieve orders", error });
+    }
+  }
 
 }
 

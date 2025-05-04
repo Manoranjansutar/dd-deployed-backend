@@ -5,7 +5,7 @@ const customerorderSchema = new mongoose.Schema(
   {
     customerId: {
       type: ObjectId,
-      ref: "customers",
+      ref: "Customer",
     },
     cartId: {
       type: String,
@@ -126,6 +126,14 @@ const customerorderSchema = new mongoose.Schema(
     },
     reasonforcancel: {
       type: String,
+    },
+    companyId:{
+      type: String,
+     
+    },
+    companyName:{
+      type: String,
+      default: "Normal User",
     },
     status: {
       type: String,

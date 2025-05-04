@@ -57,7 +57,7 @@ exports.initializeWallet = async (userId) => {
 //     const userId = req.params.userId;
 
 //     let wallet = await Wallet.findOne({ userId });
-    
+
 
 //     if (!wallet) {
 //     //   wallet = await this.initializeWallet(userId);
@@ -65,10 +65,10 @@ exports.initializeWallet = async (userId) => {
 //       success: true,
 //       data: {
 //         wallet:{balance:0},
-     
+
 //       },
 //     });
-    
+
 //     } else {
 //       // Check for expired free cash and update balance
 //       const currentDate = new Date();
@@ -124,6 +124,7 @@ exports.initializeWallet = async (userId) => {
 exports.getWallet = async (req, res) => {
   try {
     const userId = req.params.userId;
+
 
     if (!userId) {
       return res.status(200).json({
@@ -277,35 +278,35 @@ exports.addwalletSetiitn = async (req, res) => {
 // Add free cash to a user's wallet
 exports.addFreeCash = async (req, res) => {
   try {
-    const { userId, amount, description, expiryDays } = req.body;
-console.log("check",userId, amount, description, expiryDays)
+    const { userId, amount, description, expiryDays, companyId } = req.body;
+
     if (!userId || !amount || amount <= 0) {
       return res.status(400).json({
         success: false,
         error: "Invalid input parameters",
       });
     }
-    console.log("expiryDays",expiryDays)
-    // Get wallet settings
-let expiryDate
-    if(expiryDays){
-      expiryDate = new Date(expiryDays);
-    }else{
-       const settings = await WalletSettings.findOne();
 
-    // Calculate expiry date
-     expiryDate = new Date();
-    
-    expiryDate.setDate(
-      expiryDate.getDate() + (expiryDays || settings.defaultFreeCashExpiryDays)
-    );
+    // Get wallet settings
+    let expiryDate
+    if (expiryDays) {
+      expiryDate = new Date(expiryDays);
+    } else {
+      const settings = await WalletSettings.findOne();
+
+      // Calculate expiry date
+      expiryDate = new Date();
+
+      expiryDate.setDate(
+        expiryDate.getDate() + (expiryDays || settings.defaultFreeCashExpiryDays)
+      );
     }
-   
+
 
     // Find or create wallet
     let wallet = await Wallet.findOne({ userId });
     if (!wallet) {
-          wallet = await  Wallet.create({userId:userId});
+      wallet = await Wallet.create({ userId: userId, companyId: companyId || "" });
     }
 
     // Add transaction
@@ -350,7 +351,7 @@ exports.deductAmout = async (req, res) => {
     // Find or create wallet
     let wallet = await Wallet.findOne({ userId });
     if (!wallet) {
-      wallet = await  Wallet.create({userId});
+      wallet = await Wallet.create({ userId });
     }
 
     // Add transaction
@@ -512,10 +513,10 @@ exports.getTransactionHistory = async (req, res) => {
     const wallet = await Wallet.findOne({ userId });
 
     if (!wallet) {
-   res.status(200).json({
-      success: true,
-      data: [],
-    });
+      res.status(200).json({
+        success: true,
+        data: [],
+      });
     }
 
     // Sort transactions by date (newest first)
@@ -535,3 +536,16 @@ exports.getTransactionHistory = async (req, res) => {
     });
   }
 };
+
+exports.getAllWalletsByCompany = async (req, res) => {
+  try {
+let companyId = req.params.companyId;
+    let wallets = await Wallet.find({ companyId }).sort({ _id: -1 }).populate("userId");;
+    res.status(200).json({
+      success: true,
+      data: wallets,
+    });
+  } catch (error) {
+
+  }
+}

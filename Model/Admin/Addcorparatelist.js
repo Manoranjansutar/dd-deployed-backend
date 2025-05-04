@@ -7,6 +7,13 @@ const Addcorporateaddress = new Schema({
     Apartmentname: {
         type: String,
       },
+      logo: {
+        type: String,
+      },
+      mobile:{
+        type:Number
+      },
+
     Address: {
         type: String,
     },
@@ -22,6 +29,9 @@ const Addcorporateaddress = new Schema({
     },
     prefixcode: {
         type: String,
+    },
+    otp:{
+        type:Number
     },
     status: {
         type: Boolean,

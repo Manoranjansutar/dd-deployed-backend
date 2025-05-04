@@ -20,7 +20,7 @@ router.get('/getsettings', walletController.getwalletsetting);
 
 // Get transaction history
 router.get('/transactions/:userId', walletController.getTransactionHistory);
-
+router.get('/getAllWalletCompsny/:companyId', walletController.getAllWalletsByCompany);
 module.exports = router;
 
 // Webhook/Event handler for user registration

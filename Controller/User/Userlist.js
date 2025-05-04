@@ -4,9 +4,12 @@ const nodemailer = require("nodemailer");
 const randomstring = require("randomstring");
 const mongoose = require("mongoose");
 const otpModel = require("../../Model/User/Otp");
+const cron = require('node-cron');
 const walletController=require('./Wallet');
+const WalletModel=require('../../Model/User/Wallet')
 
 const { default: axios } = require("axios");
+const { uploadFile2 } = require("../../Midleware/AWS");
 
 class Customer {
   async loginWithOtp(req, res) {
@@ -129,14 +132,15 @@ class Customer {
       if (!varify) {
         return res.status(401).json({ error: "Otp is invalid!" });
       }
+
       let isPhonePresent = await CustomerModel.findOne({
         Mobile: Mobile,
       });
       
       if(!isPhonePresent){
           isPhonePresent = await CustomerModel.create({
-        Mobile: Mobile,
-      });
+          Mobile: Mobile,
+       });
         walletController.initializeWallet(isPhonePresent._id)
       }
       
@@ -156,7 +160,7 @@ class Customer {
 
   async AddCustomer(req, res) {
     try {
-      let { Fname, Mobile, Address, Flatno } = req.body;
+      let { Fname, Mobile, Address, Flatno,companyId,companyName,status,employeeId ,subsidyAmount} = req.body;
       console.log("data", Fname, Mobile, Address, Flatno);
 
       const checkMobileno = await CustomerModel.findOne({ Mobile: Mobile });
@@ -170,13 +174,28 @@ class Customer {
         Address,
         Flatno,
         // ApartmentId
+        companyId,employeeId ,subsidyAmount,
+        companyName,status:status || 'Normal'
       });
-
-console.log("adddata",Adddata)
-      Adddata.save().then((data) => {
-        return res
-          .status(200)
-          .json({ success: "Register Successfully..!", details: Adddata });
+      const savedCustomer = await Adddata.save();
+      if (status === 'Employee') {
+        const wallet = new WalletModel({
+          userId: savedCustomer._id,
+          companyId,
+          balance: subsidyAmount,
+          transactions: [{
+            amount: subsidyAmount,
+            type: 'credit',
+            description: 'Initial employee subsidy',
+            expiryDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            isFreeCash: true
+          }]
+        });
+        await wallet.save();
+      }
+      return res.status(200).json({ 
+        success: "Register Successfully..!", 
+        details: savedCustomer 
       });
     } catch (error) {
         console.log("ffhdfdff",error)
@@ -332,18 +351,19 @@ console.log("adddata",Adddata)
         Mobile,
         Email,
         Address,
-        // Password,
-        // Nooforders,
-        // Lastorderdate,
-        // lastorderamount,
+   
+    employeeId ,subsidyAmount
       } = req.body;
-      
-      console.log("dd",Mobile)
-      
-      console.log("fdf",Address)
+
       let obj = {};
       if (Fname) {
         obj["Fname"] = Fname;
+      }
+      if (employeeId) {
+        obj["employeeId"] = employeeId;
+      }
+      if (subsidyAmount&& subsidyAmount >= 0) {
+        obj["subsidyAmount"] = subsidyAmount;
       }
       if (Mobile) {
         obj["Mobile"] = Mobile;
@@ -386,7 +406,12 @@ console.log("adddata",Adddata)
   async profileimg(req, res) {
     try {
       const { userid } = req.body;
-      const profileImage = req.files[0].filename;
+      let profileImage = req.files;
+      if (!profileImage) {
+        return res.status(400).json({ error: "No profile image provided" });
+      }else if (profileImage.length > 0) {
+      profileImage=await uploadFile2(profileImage[0], "profileImages");
+    }
 
       if (!mongoose.Types.ObjectId.isValid(userid)) {
         return res.status(400).json({ error: "Invalid user ID" });
@@ -446,6 +471,112 @@ console.log("adddata",Adddata)
       console.log(error);
     }
   }
+
+  async getUserByCompany(req, res) {
+    const companyId = req.params.companyId;
+    try {
+      const users = await CustomerModel.find({ companyId: companyId }).sort({ createdAt: -1 });;
+
+        return res.status(200).json({ success: users });
+  
+
+    } catch (error) {
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+
+  async deleteUser(req, res) {
+    const userId = req.params.id;
+    try {
+      const user = await CustomerModel.findByIdAndDelete({ _id: userId });
+      if (user) {
+        return res.status(200).json({ success: "User deleted successfully" });
+      } else {
+        return res.status(404).json({ error: "User not found" });
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
 }
+
+cron.schedule('0 0 * * *', async () => {
+  // Runs at 12:00 AM every day
+  try {
+    console.log('Running subsidy expiration job...');
+    
+    // Find all employee wallets
+    const employeeWallets = await WalletModel.find({
+      userId: { $in: await CustomerModel.find({ status: 'Employee' }).distinct('_id') }
+    });
+
+    for (const wallet of employeeWallets) {
+      // Expire unused subsidies
+      const now = new Date();
+      let expiredAmount = 0;
+
+      // Find and mark expired transactions
+      wallet.transactions.forEach(transaction => {
+        if (transaction.isFreeCash && transaction.expiryDate <= now && !transaction.expiredProcessed) {
+          expiredAmount += transaction.amount;
+          transaction.expiredProcessed = true;
+        }
+      });
+
+      // Update wallet balance
+      if (expiredAmount > 0) {
+        wallet.balance = Math.max(0, wallet.balance - expiredAmount);
+        
+        // Add transaction for expired amount
+        wallet.transactions.push({
+          amount: expiredAmount,
+          type: 'debit',
+          description: 'Expired subsidy',
+          isFreeCash: true,
+          createdAt: now
+        });
+      }
+
+      await wallet.save();
+    }
+  } catch (error) {
+    console.error('Error in subsidy expiration job:', error);
+  }
+});
+
+cron.schedule('1 0 * * *', async () => {
+  // Runs at 12:01 AM every day
+  try {
+    console.log('Running subsidy addition job...');
+    
+    // Find all employee wallets
+    const employeeWallets = await WalletModel.find({
+      userId: { $in: await CustomerModel.find({ status: 'Employee' }).distinct('_id') }
+    });
+
+    for (const wallet of employeeWallets) {
+      // Get customer to check subsidy amount
+      const customer = await CustomerModel.findById(wallet.userId);
+      
+      // Add new daily subsidy
+      const subsidy = customer.subsidyAmount ;
+      
+      wallet.balance += subsidy;
+      wallet.transactions.push({
+        amount: subsidy,
+        type: 'credit',
+        description: 'Daily employee subsidy',
+        expiryDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        isFreeCash: true
+      });
+
+      await wallet.save();
+    }
+  } catch (error) {
+    console.error('Error in subsidy addition job:', error);
+  }
+});
+
 const CutomerController = new Customer();
 module.exports = CutomerController;

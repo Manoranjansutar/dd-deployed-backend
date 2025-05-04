@@ -26,6 +26,8 @@ router.put('/updateuser', upload.any(), CutomerController.updatedUser)
 router.put('/profileimg', upload.any(), CutomerController.profileimg)
 router.get("/registeruser", CutomerController.getRegisterUser)
 router.put("/blockuser/:id", CutomerController.BlockUser);
+router.get('/getUserByCompany/:companyId', CutomerController.getUserByCompany);
+router.delete('/deleteUser/:id', CutomerController.deleteUser);
 
 
 module.exports = router;

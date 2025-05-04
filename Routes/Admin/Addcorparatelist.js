@@ -1,10 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const addressconntroller = require("../../Controller/Admin/Addcorporatelist");
-
-router.post("/addcorporate", addressconntroller.addcorporate);
+const multer = require("multer");
+const upload = multer();
+router.post("/addcorporate",upload.single('logo'), addressconntroller.addcorporate);
 router.get("/getcorporate", addressconntroller.getcorporate);
 router.delete("/deletecorporate/:id", addressconntroller.deletecorporate);
-router.put("/updatecorporatelist", addressconntroller.updatecorporatelist);
+router.put("/updatecorporatelist",upload.single('logo'), addressconntroller.updatecorporatelist);
 router.put("/corporateItemStatus", addressconntroller.corporateItemStatus);
+router.post("/Loginwithotp", addressconntroller.sendOtpCorprate);
+router.post("/verifyOtpCorprate", addressconntroller.otpVarificationCorprate);
 module.exports = router;

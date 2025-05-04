@@ -11,5 +11,6 @@ router.put("/updateOrderStatus/:id",CartController.updateOrderStatus);
 router.delete("/deletefoodorder/:id",CartController.deletefoodorder);
 router.get("/getorderNotRatedByUserID/:customerId",CartController.getorderNotRatedByUserID);
 router.put("/makeRateOfOrder",CartController.makeRateOfOrder);
+router.get('/getAllOrdersByCompanyId/:companyId', CartController.getAllOrderByCompany);
 // router.put("/makeSoldout",CartController)
 module.exports=router;

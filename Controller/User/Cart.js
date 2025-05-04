@@ -6,7 +6,7 @@ const cron = require('node-cron');
 class Cart{
     async addCart(req, res) {
         try {
-            let { userId, items, lastUpdated, username, mobile } = req.body;
+            let { userId, items, lastUpdated, username, mobile,companId } = req.body;
  
                 if(!items) return res.status(200).json({message:"no item"})
                    if(!items.length) return res.status(200).json({message:"no item"})
@@ -18,13 +18,13 @@ class Cart{
                     // Otherwise, update the existing cart
                   existingCart=  await CartModel.findOneAndUpdate(
                         { userId },
-                      { $set: { items, lastUpdated, abandoned: true, emailSent: false }},
+                      { $set: { items, lastUpdated, abandoned: true, emailSent: false ,companId}},
                         { new: true }
                     );
             
             } else {
                 // If no cart exists, create a new one
-                existingCart=   await CartModel.create({ userId, items, lastUpdated, username, mobile });
+                existingCart=   await CartModel.create({ userId, items, lastUpdated, username, mobile ,companId});
             }
     
             res.status(200).json({ success: true,data:existingCart?._id ,cartId:existingCart?.cartId});
@@ -80,6 +80,22 @@ class Cart{
         }catch(error){
             console.error('Error retrieving cart:', error);
         }
+    }
+
+    async getCartBycompany(req,res){
+      try {
+        const { companId } = req.params;
+        const cart = await CartModel.find({ companId });
+        
+        if (!cart) {
+          return res.status(200).json({ items: [] });
+        }
+        
+       return res.status(200).json({ items: cart.items });
+      } catch (error) {
+        console.error('Error retrieving cart:', error);
+        res.status(500).json({ error: 'Failed to retrieve cart' });
+      }
     }
 }
 

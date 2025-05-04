@@ -20,6 +20,7 @@ const cartSchema = new mongoose.Schema({
     lastUpdated: { type: Date, default: Date.now },
     abandoned: { type: Boolean, default: false },
     emailSent: { type: Boolean, default: false },
+    companId: { type: String },
     status:{
       type:String,
       default:"Added"

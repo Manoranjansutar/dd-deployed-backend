@@ -52,8 +52,24 @@ const Customer = new Schema(
     },
     lastLogin:{
       type:String,
+    },
+    companyId:{
+      type: String,
+    },
+    employeeId:{
+      type: String,
+    },
+    companyName:{
+      type: String,
+    },
+    subsidyAmount:{
+      type: Number,
+      default:0
+    },
+    status:{
+      type: String,
+      default:"Normal",
     }
-    
   },
   { timestamps: true }
 );

@@ -32,6 +32,7 @@ const transactionSchema = new mongoose.Schema({
        type: Boolean,
     default: false
   },
+
   createdAt: {
     type: Date,
     default: Date.now
@@ -48,6 +49,9 @@ const walletSchema = new mongoose.Schema({
   balance: {
     type: Number,
     default: 0
+  },
+  companyId:{
+    type: String,
   },
   transactions: [transactionSchema],
   updatedAt: {
