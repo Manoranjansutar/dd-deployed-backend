@@ -85,13 +85,13 @@ class Cart{
     async getCartBycompany(req,res){
       try {
         const { companId } = req.params;
-        const cart = await CartModel.find({ companId });
+        const cart = await CartModel.find({ companId }).sort({_id:-1});
         
         if (!cart) {
           return res.status(200).json({ items: [] });
         }
         
-       return res.status(200).json({ items: cart.items });
+       return res.status(200).json({ items: cart });
       } catch (error) {
         console.error('Error retrieving cart:', error);
         res.status(500).json({ error: 'Failed to retrieve cart' });
