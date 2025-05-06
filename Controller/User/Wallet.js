@@ -509,11 +509,18 @@ exports.updateSettings = async (req, res) => {
 exports.getTransactionHistory = async (req, res) => {
   try {
     const userId = req.params.userId;
+    if(!userId) {
+      
+      return res.status(200).json({
+        success: true,
+        data: [],
+      });
+    }
 
     const wallet = await Wallet.findOne({ userId });
 
     if (!wallet) {
-      res.status(200).json({
+     return res.status(200).json({
         success: true,
         data: [],
       });
@@ -529,7 +536,7 @@ exports.getTransactionHistory = async (req, res) => {
       data: transactions,
     });
   } catch (error) {
-    console.error("Error fetching transaction history:", error);
+    console.log("Error fetching transaction history:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch transaction history",
