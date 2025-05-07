@@ -7,7 +7,8 @@ const otpModel = require("../../Model/User/Otp");
 const cron = require('node-cron');
 const walletController=require('./Wallet');
 const WalletModel=require('../../Model/User/Wallet')
-
+const SelectAddressModel = require('../../Model/User/SelectedAddress');
+const phonepayModel = require('../../Model/User/phonepay');
 const { default: axios } = require("axios");
 const { uploadFile2 } = require("../../Midleware/AWS");
 
@@ -362,7 +363,7 @@ class Customer {
       if (employeeId) {
         obj["employeeId"] = employeeId;
       }
-      if (subsidyAmount&& subsidyAmount >= 0) {
+      if (subsidyAmount|| subsidyAmount == 0) {
         obj["subsidyAmount"] = subsidyAmount;
       }
       if (Mobile) {
@@ -490,7 +491,11 @@ class Customer {
     try {
       const user = await CustomerModel.findByIdAndDelete({ _id: userId });
       if (user) {
+        await WalletModel.deleteOne({ userId: userId });
+        await SelectAddressModel.deleteMany({ userId: userId });
+        await phonepayModel.deleteMany({ userId: userId });
         return res.status(200).json({ success: "User deleted successfully" });
+    
       } else {
         return res.status(404).json({ error: "User not found" });
       }
