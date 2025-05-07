@@ -438,7 +438,7 @@ class Customer {
 
   async getRegisterUser(req, res) {
     try {
-      const getRegisterDetails = await CustomerModel.find({});
+      const getRegisterDetails = await CustomerModel.find({}).sort({_id: -1  });
       if (getRegisterDetails) {
         return res.status(200).json({ success: getRegisterDetails });
       }
