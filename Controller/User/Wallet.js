@@ -146,6 +146,24 @@ exports.getWallet = async (req, res) => {
       });
     }
 
+    const settings = await WalletSettings.findOne() || {
+      minCartValueForWallet: 0,
+      maxWalletUsagePerOrder: 100,
+    };
+
+    if(wallet.companyId){
+      return res.status(200).json({
+        success: true,
+        data: {
+          wallet,
+          settings: {
+            minCartValueForWallet: settings.minCartValueForWallet,
+            maxWalletUsagePerOrder: settings.maxWalletUsagePerOrder,
+          },
+        },
+      });
+    }else {
+
     const currentDate = new Date();
 
     // Filter expired free cash transactions that haven't been processed
@@ -197,10 +215,7 @@ exports.getWallet = async (req, res) => {
     }
 
     // Get wallet settings
-    const settings = await WalletSettings.findOne() || {
-      minCartValueForWallet: 0,
-      maxWalletUsagePerOrder: 100,
-    };
+ 
 
     // Format balance to avoid floating-point issues
     wallet.balance = Number.isInteger(wallet.balance)
@@ -217,6 +232,7 @@ exports.getWallet = async (req, res) => {
         },
       },
     });
+  }
   } catch (error) {
     console.error("Error fetching wallet:", error);
 
@@ -308,6 +324,7 @@ exports.addFreeCash = async (req, res) => {
     if (!wallet) {
       wallet = await Wallet.create({ userId: userId, companyId: companyId || "" });
     }
+
 
     // Add transaction
     wallet.transactions.push({
@@ -418,6 +435,7 @@ exports.applyToOrder = async (req, res) => {
         message: "Wallet not found",
       });
     }
+
 
     // Check if enough balance
     if (wallet.balance < amountToUse) {

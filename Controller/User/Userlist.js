@@ -506,34 +506,48 @@ class Customer {
   }
 }
 
+function formatDate(date) {
+  return date.toISOString().split('T')[0]; // YYYY-MM-DD
+}
+
 cron.schedule('0 0 * * *', async () => {
   // Runs at 12:00 AM every day
   try {
-    console.log('Running subsidy expiration job...');
-    
-    // Find all employee wallets
-    const employeeWallets = await WalletModel.find({
-      userId: { $in: await CustomerModel.find({ status: 'Employee' }).distinct('_id') }
-    });
+    const today = formatDate(new Date());
+    console.log(`[${today}] Running subsidy expiration job...`);
 
-    for (const wallet of employeeWallets) {
-      // Expire unused subsidies
-      const now = new Date();
+    const employeeIds = await CustomerModel.find({ status: 'Employee' }).distinct('_id');
+    const wallets = await WalletModel.find({ userId: { $in: employeeIds } });
+
+    for (const wallet of wallets) {
       let expiredAmount = 0;
+      const now = new Date();
 
-      // Find and mark expired transactions
-      wallet.transactions.forEach(transaction => {
-        if (transaction.isFreeCash && transaction.expiryDate <= now && !transaction.expiredProcessed) {
-          expiredAmount += transaction.amount;
-          transaction.expiredProcessed = true;
+      let alreadyExpiredToday = wallet.transactions.some(tx =>
+        tx.description === 'Expired subsidy' &&
+        formatDate(tx.createdAt) === today
+      );
+
+      if (alreadyExpiredToday) {
+        console.log(`Wallet ${wallet._id} already processed for expiration today.`);
+        continue;
+      }
+
+      wallet.transactions.forEach(tx => {
+        if (
+          tx.isFreeCash &&
+          tx.expiryDate &&
+          tx.expiryDate <= now &&
+          !tx.expiredProcessed
+        ) {
+          expiredAmount += tx.amount;
+          tx.expiredProcessed = true;
         }
       });
 
-      // Update wallet balance
       if (expiredAmount > 0) {
         wallet.balance = Math.max(0, wallet.balance - expiredAmount);
-        
-        // Add transaction for expired amount
+
         wallet.transactions.push({
           amount: expiredAmount,
           type: 'debit',
@@ -543,6 +557,17 @@ cron.schedule('0 0 * * *', async () => {
         });
       }
 
+      // Also mark all expired as processed, even if amount is 0
+      wallet.transactions.forEach(tx => {
+        if (
+          tx.isFreeCash &&
+          tx.expiryDate &&
+          tx.expiryDate <= now
+        ) {
+          tx.expiredProcessed = true;
+        }
+      });
+
       await wallet.save();
     }
   } catch (error) {
@@ -550,30 +575,39 @@ cron.schedule('0 0 * * *', async () => {
   }
 });
 
-cron.schedule('1 0 * * *', async () => {
-  // Runs at 12:01 AM every day
-  try {
-    console.log('Running subsidy addition job...');
-    
-    // Find all employee wallets
-    const employeeWallets = await WalletModel.find({
-      userId: { $in: await CustomerModel.find({ status: 'Employee' }).distinct('_id') }
-    });
+cron.schedule('2 0 * * *', async () => {
 
-    for (const wallet of employeeWallets) {
-      // Get customer to check subsidy amount
+  try {
+    const today = formatDate(new Date());
+    console.log(`[${today}] Running subsidy addition job...`);
+
+    const employeeIds = await CustomerModel.find({ status: 'Employee' }).distinct('_id');
+    const wallets = await WalletModel.find({ userId: { $in: employeeIds } });
+
+    for (const wallet of wallets) {
       const customer = await CustomerModel.findById(wallet.userId);
-      
-      // Add new daily subsidy
-      const subsidy = customer.subsidyAmount ;
-      
+      const subsidy = customer?.subsidyAmount || 0;
+
+      // Check if already added today
+      const alreadyAdded = wallet.transactions.some(tx =>
+        tx.description === 'Daily employee subsidy' &&
+        formatDate(tx.createdAt) === today
+      );
+
+      if (alreadyAdded) {
+        console.log(`Wallet ${wallet._id} already received subsidy today.`);
+        continue;
+      }
+
       wallet.balance += subsidy;
+
       wallet.transactions.push({
         amount: subsidy,
         type: 'credit',
         description: 'Daily employee subsidy',
         expiryDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        isFreeCash: true
+        isFreeCash: true,
+        createdAt: new Date()
       });
 
       await wallet.save();
