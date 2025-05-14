@@ -590,7 +590,7 @@ cron.schedule('2 0 * * *', async () => {
 
       // Check if already added today
       const alreadyAdded = wallet.transactions.some(tx =>
-        tx.description === 'Daily employee subsidy' &&
+        (tx.description === 'Daily employee subsidy'|| tx.description ==="Initial employee subsidy")&&
         formatDate(tx.createdAt) === today
       );
 
