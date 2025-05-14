@@ -32,6 +32,11 @@ const phonepaytransaction = new mongoose.Schema(
          cartId:{
         type:String  
       },
+      paymentProcess:{
+        type:Boolean,
+        default:false
+      },
+
     cart_id:{
         type:String  
       },

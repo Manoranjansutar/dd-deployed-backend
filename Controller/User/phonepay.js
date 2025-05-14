@@ -123,7 +123,11 @@ console.log(responseJson?.data);
 
     // Log the callback data for debugging
     console.log(`Callback received: Transaction ${merchantTransactionId}, Status: ${state}`);
- let data=await transactionModel.findById(merchantTransactionId);
+    let data = await transactionModel.findOneAndUpdate(
+      { _id: merchantTransactionId, paymentProcess: false },
+      { $set: { paymentProcess: true } },
+      { new: true }
+    );
  if(data){
      data.status=state;
        if (state === 'COMPLETED'&&data.config) {
