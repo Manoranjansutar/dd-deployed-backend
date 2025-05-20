@@ -39,6 +39,8 @@ const Social = require("./Routes/Admin/SocialMedia");
 const LiveStream = require("./Routes/Admin/Livestream")
 const Gst = require("./Routes/Admin/Gst");
 const Coupon = require("./Routes/Admin/Coupon");
+const offerRoutes=require('./Routes/Admin/OfferRoute');
+const reportRoutes=require('./Routes/Admin/OfferReport');
 //User
 const GeneralEnquiry = require("./Routes/User/GeneralEnquiry");
 const Userlist = require("./Routes/User/Userlist");
@@ -67,6 +69,10 @@ app.use("/api/admin", LiveStream);
 app.use("/api/admin", Gst);
 app.use("/api/admin", Coupon);
 app.use("/api/admin", CloseShop);
+app.use('/api/admin', offerRoutes);
+// app.use('/api/admin', bannerRoutes);
+app.use('/api/admin', reportRoutes);
+
 
 //User
 app.use("/api/user", paymentRoute);

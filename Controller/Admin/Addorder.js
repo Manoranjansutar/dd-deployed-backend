@@ -7,7 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 const { default: axios } = require("axios");
 const Wallet = require("../../Model/User/Wallet");
 const CartModel = require('../../Model/User/Cart')
-
+const ReportModel = require('../../Model/Admin/OfferReports');
 
 async function sendorderwhatsapp(oderid, user, mobile, slote, location) {
   try {
@@ -240,6 +240,7 @@ class customerCart {
         }
         // Update the stock for each product in the order
         for (let item of allProduct) {
+          
           const product = await ProductModel.findById(item.foodItemId);
           if (product) {
             product.Remainingstock -= item.quantity;

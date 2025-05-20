@@ -162,7 +162,7 @@ class Customer {
   async AddCustomer(req, res) {
     try {
       let { Fname, Mobile, Address, Flatno,companyId,companyName,status,employeeId ,subsidyAmount} = req.body;
-      console.log("data", Fname, Mobile, Address, Flatno);
+      
 
       const checkMobileno = await CustomerModel.findOne({ Mobile: Mobile });
       if (checkMobileno) {

@@ -11,8 +11,9 @@ var storage = multer.diskStorage({
   },
 });
 const upload = multer();
-router.post("/banner", upload.any(), bannerController.banner);
-router.get("/getbanner", upload.any(), bannerController.getbanner);
+router.post("/banners", upload.any(), bannerController.banner);
+router.get("/banners", upload.any(), bannerController.getbanner);
 router.delete("/Deletebanner/:Id", bannerController.Deletebanner);
-router.put("/editbanner", upload.any(),bannerController.editbanner);
+router.put("/editbanner/:id", upload.any(),bannerController.editbanner);
+router.get('/banners/images', bannerController.getBannerImages);
 module.exports = router;
