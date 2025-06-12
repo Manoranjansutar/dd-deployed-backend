@@ -135,6 +135,9 @@ const customerorderSchema = new mongoose.Schema(
       type: String,
       default: "Normal User",
     },
+    customerType:{
+      type:String
+    },
     status: {
       type: String,
       default: "Cooking",

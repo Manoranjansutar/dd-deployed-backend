@@ -51,6 +51,8 @@ const paymentRoute = require("./Routes/User/phonepay");
 const Addcart = require("./Routes/User/Cart");
 const Wallet=require('./Routes/User/Wallet');
 const CloseShop=require('./Routes/Admin/Resturant')
+const PackerRoutes=require("./Routes/Packer/PackerRoute")
+
 //Admin
 app.use("/api/admin", login);
 app.use("/api/admin", HomeBanner);
@@ -74,6 +76,7 @@ app.use('/api/admin', offerRoutes);
 app.use('/api/admin', reportRoutes);
 
 
+
 //User
 app.use("/api/user", paymentRoute);
 app.use("/api/User", GeneralEnquiry);
@@ -83,6 +86,7 @@ app.use("/api/User", Addrequestaddress);
 app.use("/api/User", SelectedAddress);
 app.use("/api/cart",Addcart);
 app.use("/api/wallet",Wallet);
+app.use("/api/packer",PackerRoutes);
 
 const PORT = process.env.PORT || 7013;
 app.use(express.static(path.join(__dirname, 'build'))); // Change 'build' to your frontend folder if needed
