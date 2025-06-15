@@ -454,6 +454,151 @@ class customerCart {
     }
   }
 
+  // static authPacker(req, res, next) {
+  //   const token = req.headers.authorization?.split("Bearer ")[1];
+  //   if (!token) {
+  //     return res.status(401).json({ error: "Unauthorized: No token provided" });
+  //   }
+  //   // Mock verification (replace with JWT or your auth mechanism)
+  //   req.packer = { packerId: "packer123", username: "JohnPacker" }; // Example
+  //   next();
+  // }
+
+// GET /api/packer/orders - Fetch orders assigned to the packer, filtered by location
+
+
+async getPackerOrders(req, res) {
+  try {
+   
+    const { location } = req.query; // Get location from query parameter
+
+    let query = {
+    
+      status: { $in: ["Pending", "Partially Packed", "Packed", "Cooking", "Packing"] },
+    };
+
+    // Add location filter if provided
+    // if (location) {
+    //   query.delivarylocation = location;
+    // }
+
+    const orders = await customerCartModel
+      .find(query)
+      .populate("allProduct.foodItemId")
+      .sort({ createdAt: -1 });
+
+    if (!orders.length) {
+      return res.status(404).json({ message: "No orders found for this packer" });
+    }
+
+    return res.status(200).json(orders);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal Server Error", details: error.message });
+  }
+}
+
+// PUT /api/packer/orders/:id - Update order details (status, bagNo, driver, items, etc.)
+async updatePackerOrder(req, res) {
+  try {
+  
+
+    const {
+      id,
+      status,
+      bagNo,
+      driver,
+      reason,
+      packBefore,
+      allProduct,
+      timeLeft,
+      packerId,
+      _id
+    } = req.body;
+console.log(req.body);
+
+    // Find the order
+    let order = await customerCartModel.findById(_id).populate("allProduct.foodItemId");
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Verify packer authorization
+    // if (order.packer && order.packer !== packerId) {
+    //   return res.status(403).json({ message: "Not authorized to update this order" });
+    // }
+
+    // Validate status
+    const validStatuses = [
+      "Pending",
+      "Partially Packed",
+      "Packed",
+      "Cooking",
+      "Packing",
+      "Ontheway",
+      "Delivered",
+      "Undelivered",
+      "Returned",
+      "Cancelled",
+    ];
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    // Update fields
+    if (status) order.status = status;
+    if (bagNo) order.bagNo = bagNo;
+    if (driver) order.driver = driver;
+    if (reason) order.reason = reason;
+    if (packBefore) order.packBefore = packBefore;
+    if (timeLeft) order.timeLeft = timeLeft;
+    if (allProduct && Array.isArray(allProduct)) {
+      order.allProduct = allProduct.map((item) => ({
+        ...item,
+        packed: item.packed || false,
+        missing: item.missing || false,
+      }));
+    }
+    if(packerId){
+       order.packer = packerId; // Ensure packer is assigned
+    }
+   
+
+    // Save updated order
+    order= await order.save();
+
+    return res.status(200).json({
+      message: "Order updated successfully",
+      order,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal Server Error", details: error.message });
+  }
+}
+
+// GET /api/packer/locations - Fetch available locations
+async getLocations(req, res) {
+  try {
+    const locations = ["Sector 10", "Sector 12", "Sector 15", "Sector 20"];
+    return res.status(200).json(locations);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal Server Error", details: error.message });
+  }
+}
+
+// GET /api/packer/drivers - Fetch available drivers
+async getDrivers(req, res) {
+  try {
+    const drivers = ["Ravi", "Kartik", "Suresh", "Ramesh"];
+    return res.status(200).json(drivers);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal Server Error", details: error.message });
+  }
+}
+
 }
 
 const customerCartController = new customerCart();

@@ -8,6 +8,6 @@ router.post("/sendPackerOtp",PackerController.sendPackerOtp);
 router.post("/verificationPacker",PackerController.verificationPacker);
 router.put("/updatePacker",PackerController.updatePacker);
 router.get("/getAllPacker",PackerController.getAllPacker);
-router.delete("/deletPacker",PackerController.deletPacker)
+router.delete("/deletPacker/:packerId",PackerController.deletPacker)
 
 module.exports=router;

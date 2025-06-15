@@ -52,6 +52,7 @@ const Addcart = require("./Routes/User/Cart");
 const Wallet=require('./Routes/User/Wallet');
 const CloseShop=require('./Routes/Admin/Resturant')
 const PackerRoutes=require("./Routes/Packer/PackerRoute")
+const HubRoute=require('./Routes/Packer/HubRoute')
 
 //Admin
 app.use("/api/admin", login);
@@ -74,6 +75,7 @@ app.use("/api/admin", CloseShop);
 app.use('/api/admin', offerRoutes);
 // app.use('/api/admin', bannerRoutes);
 app.use('/api/admin', reportRoutes);
+app.use('/api/Hub',HubRoute)
 
 
 

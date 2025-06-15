@@ -2,13 +2,17 @@ const mongoose = require('mongoose');
 
 // Packer Schema with auto-generated ID
 const packerSchema = new mongoose.Schema({
-    packerId: { type: String, unique: true, required: true },
+    packerId: { type: String, unique: true,  },
     username: { type: String, required: true, unique: true },
-    mobileNumber: { type: String, required: true, unique: true },
-    location: { type: String, required: true },
-    otp: {
-        type: Number
+    mobileNumber: {
+        type: String,
+        required: true,
+        unique: true,
+        match: [/^\+91[6-9]\d{9}$/, 'Please provide a valid Indian mobile number in E.164 format (e.g., +919876543210)']
     },
+    hubs: [{ type: String, required: true }],
+    locations: [{ type: String, required: true }],
+    otp: { type: Number },
     createdAt: { type: Date, default: Date.now }
 });
 
