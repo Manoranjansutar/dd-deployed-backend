@@ -70,7 +70,16 @@ exports.getUserOffers = async (req, res) => {
     try {
         const currentDate = new Date();
         let id = req.query.id;
-        console.log("id",id)
+        // console.log("id", id)
+
+        if (!id) return res.status(200).json({
+            success: true,
+            data: [],
+        })
+        if (id === "undefined") return res.status(200).json({
+            success: true,
+            data: [],
+        })
         // Find active offers (current date is between startDate and endDate)
         const offers = await Offer.findOne({
             startDate: { $lte: currentDate },
@@ -82,7 +91,7 @@ exports.getUserOffers = async (req, res) => {
         }
 
         // Format response for user
-        if (id&&id!=="undefined") {
+        if (id && id !== "undefined") {
             const checkUser = await UserModel.findById(id);
             if (checkUser.employeeId) {
                 return res.status(200).json({

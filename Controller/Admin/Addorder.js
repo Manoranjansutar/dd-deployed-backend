@@ -255,7 +255,7 @@ class customerCart {
           }
         }
 
-
+          io?.emit("newOrder",{orderid,delivarylocation,allTotal,username})
         return res.status(200).json({ success: "Order placed and stock updated" });
       }
     } catch (error) {
@@ -512,7 +512,7 @@ async updatePackerOrder(req, res) {
       packBefore,
       allProduct,
       timeLeft,
-      packerId,
+      packer,
       _id
     } = req.body;
 console.log(req.body);
@@ -524,7 +524,7 @@ console.log(req.body);
     }
 
     // Verify packer authorization
-    // if (order.packer && order.packer !== packerId) {
+    // if (order.packer && order.packer !== packer) {
     //   return res.status(403).json({ message: "Not authorized to update this order" });
     // }
 
@@ -559,8 +559,8 @@ console.log(req.body);
         missing: item.missing || false,
       }));
     }
-    if(packerId){
-       order.packer = packerId; // Ensure packer is assigned
+    if(packer){
+       order.packer = packer; // Ensure packer is assigned
     }
    
 

@@ -3,7 +3,8 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 require("dotenv").config();
-
+const http = require('http');
+const { Server } = require('socket.io');
 const path = require("path");
 
 // Middleware
@@ -21,6 +22,15 @@ mongoose
   })
   .then(() => console.log("DB is Connected"))
   .catch(() => console.log("DB is not Connected"));
+
+
+  const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
+});
 // require('./Controller/migration')
 //Admin
 const login = require("./Routes/Admin/AdminLogin");
@@ -90,6 +100,15 @@ app.use("/api/cart",Addcart);
 app.use("/api/wallet",Wallet);
 app.use("/api/packer",PackerRoutes);
 
+io.on('connection', (socket) => {
+  console.log('Admin connected:', socket.id);
+  socket.on('disconnect', () => {
+    console.log('Admin disconnected:', socket.id);
+  });
+});
+
+global.io=io;
+
 const PORT = process.env.PORT || 7013;
 app.use(express.static(path.join(__dirname, 'build'))); // Change 'build' to your frontend folder if needed
 
@@ -99,6 +118,6 @@ app.get("*", (req, res) => {
   return  res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Running on port ${PORT}`);
 });

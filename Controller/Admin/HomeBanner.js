@@ -50,9 +50,9 @@ class Banner {
     let { BannerImage, BannerText,BannerDesc } = req.body;
    let file = req.files?.length ? await uploadFile2(req.files[0],"Banner"):""
     let obj = {};
-    if (BannerText) {
+   
       obj["BannerText"] = BannerText;
-    }
+  
     if(BannerImage){
       obj["BannerImage"] = BannerImage;
     }
@@ -60,9 +60,9 @@ class Banner {
       obj["BannerImage"] = file;
     }
   
-if(BannerDesc) {
+
     obj["BannerDesc"] = BannerDesc;
-}
+
     try {
       let data = await BannerModel.findByIdAndUpdate(
         { _id: id },
