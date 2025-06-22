@@ -537,7 +537,7 @@ cron.schedule('0 0 * * *', async () => {
         if (
           tx.isFreeCash &&
           tx.expiryDate &&
-          tx.expiryDate <= now &&
+          (tx.expiryDate <= now ||tx.description=="Initial employee subsidy")&&
           !tx.expiredProcessed
         ) {
           expiredAmount += tx.amount;
