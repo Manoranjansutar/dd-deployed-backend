@@ -467,20 +467,47 @@ class customerCart {
 // GET /api/packer/orders - Fetch orders assigned to the packer, filtered by location
 
 
+// async getPackerOrders(req, res) {
+//   try {
+   
+//     const { location } = req.query; // Get location from query parameter
+
+//     let query = {
+    
+//       status: { $in: ["Pending", "Partially Packed", "Packed", "Cooking", "Packing"] },
+//     };
+
+//     const orders = await customerCartModel
+//       .find(query)
+//       .populate("allProduct.foodItemId")
+//       .sort({ createdAt: -1 });
+
+//     if (!orders.length) {
+//       return res.status(404).json({ message: "No orders found for this packer" });
+//     }
+
+//     return res.status(200).json(orders);
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ error: "Internal Server Error", details: error.message });
+//   }
+// }
 async getPackerOrders(req, res) {
   try {
-   
-    const { location } = req.query; // Get location from query parameter
+    const { location } = req.query; // if needed for future filtering
 
+    // Get today's date range
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Query only today's orders with specific statuses
     let query = {
-    
       status: { $in: ["Pending", "Partially Packed", "Packed", "Cooking", "Packing"] },
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
     };
-
-    // Add location filter if provided
-    // if (location) {
-    //   query.delivarylocation = location;
-    // }
 
     const orders = await customerCartModel
       .find(query)
@@ -488,7 +515,7 @@ async getPackerOrders(req, res) {
       .sort({ createdAt: -1 });
 
     if (!orders.length) {
-      return res.status(404).json({ message: "No orders found for this packer" });
+      return res.status(404).json({ message: "No orders found for today" });
     }
 
     return res.status(200).json(orders);
@@ -515,7 +542,7 @@ async updatePackerOrder(req, res) {
       packer,
       _id
     } = req.body;
-console.log(req.body);
+
 
     // Find the order
     let order = await customerCartModel.findById(_id).populate("allProduct.foodItemId");
