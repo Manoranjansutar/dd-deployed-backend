@@ -21,7 +21,7 @@ packerSchema.pre('save', async function (next) {
     if (!this.packerId) {
         try {
             const count = await this.constructor.countDocuments();
-            this.packerId = `DDP${String(count + 1).padStart(3, '0')}`;
+            this.packerId = `DDPO00${String(count + 1).padStart(3, '0')}`;
             next();
         } catch (error) {
             next(error);
