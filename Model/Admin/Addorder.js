@@ -326,6 +326,9 @@ const customerorderSchema = new mongoose.Schema(
     packer: {
       type: String,
     },
+    packername:{
+      type:String
+    },
     timeLeft: {
       type: String,
       default: "15 Mins", // Default to 15 minutes
@@ -336,9 +339,13 @@ const customerorderSchema = new mongoose.Schema(
     packBefore: {
       type: String,
     },
+    packeTime:{
+      type:String
+    },
     driver: {
       type: String,
     },
+
   },
   { timestamps: true }
 );

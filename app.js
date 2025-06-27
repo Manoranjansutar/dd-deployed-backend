@@ -63,7 +63,8 @@ const Wallet=require('./Routes/User/Wallet');
 const CloseShop=require('./Routes/Admin/Resturant')
 const PackerRoutes=require("./Routes/Packer/PackerRoute")
 const HubRoute=require('./Routes/Packer/HubRoute')
-
+const BagRoutes=require('./Routes/Admin/Bag');
+const ReasonRoutes=require('./Routes/Admin/Reasons')
 //Admin
 app.use("/api/admin", login);
 app.use("/api/admin", HomeBanner);
@@ -86,7 +87,8 @@ app.use('/api/admin', offerRoutes);
 // app.use('/api/admin', bannerRoutes);
 app.use('/api/admin', reportRoutes);
 app.use('/api/Hub',HubRoute)
-
+app.use('/api/admin',BagRoutes)
+app.use('/api/admin',ReasonRoutes)
 
 
 //User

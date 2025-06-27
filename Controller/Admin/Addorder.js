@@ -512,7 +512,7 @@ async getPackerOrders(req, res) {
     const orders = await customerCartModel
       .find(query)
       .populate("allProduct.foodItemId")
-      .sort({ createdAt: -1 });
+      // .sort({ createdAt: -1 });
 
     if (!orders.length) {
       return res.status(404).json({ message: "No orders found for today" });
@@ -540,7 +540,8 @@ async updatePackerOrder(req, res) {
       allProduct,
       timeLeft,
       packer,
-      _id
+      _id,
+      packername,packeTime
     } = req.body;
 
 
@@ -579,6 +580,7 @@ async updatePackerOrder(req, res) {
     if (reason) order.reason = reason;
     if (packBefore) order.packBefore = packBefore;
     if (timeLeft) order.timeLeft = timeLeft;
+    if(packeTime) order.packeTime=packeTime
     if (allProduct && Array.isArray(allProduct)) {
       order.allProduct = allProduct.map((item) => ({
         ...item,
@@ -589,7 +591,10 @@ async updatePackerOrder(req, res) {
     if(packer){
        order.packer = packer; // Ensure packer is assigned
     }
-   
+   if(packername){
+    order.packername=packername
+   }
+// console.log("rewww",req.body);
 
     // Save updated order
     order= await order.save();
