@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 
 // Packer Schema with auto-generated ID
 const packerSchema = new mongoose.Schema({
-    packerId: { type: String, unique: true,  },
-    username: { type: String, required: true, unique: true },
+    packerId: { type: String, },
+    username: { type: String, required: true },
     mobileNumber: {
         type: String,
         required: true,
@@ -21,7 +21,7 @@ packerSchema.pre('save', async function (next) {
     if (!this.packerId) {
         try {
             const count = await this.constructor.countDocuments();
-            this.packerId = `DDPO00${String(count + 1).padStart(3, '0')}`;
+            this.packerId = `DDPA00${String(count + 1).padStart(3, '0')}`;
             next();
         } catch (error) {
             next(error);

@@ -189,6 +189,9 @@ const customerorderSchema = new mongoose.Schema(
         name: {
           type: String,
         },
+        unit: {
+          type: String,
+        },
         packed: {
           type: Boolean,
           default: false,
