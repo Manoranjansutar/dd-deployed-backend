@@ -506,12 +506,12 @@ async getPackerOrders(req, res) {
     // Query only today's orders with specific statuses
     let query = {
       status: { $in: ["Pending", "Partially Packed", "Packed", "Cooking", "Packing"] },
-      createdAt: { $gte: startOfDay, $lte: endOfDay },
+      // createdAt: { $gte: startOfDay, $lte: endOfDay },
     };
 
     const orders = await customerCartModel
       .find(query)
-      .populate("allProduct.foodItemId")
+      .populate("allProduct.foodItemId").limit(4)
       // .sort({ createdAt: -1 });
 
     if (!orders.length) {
