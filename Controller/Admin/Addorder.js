@@ -390,6 +390,113 @@ class customerCart {
     }
   }
 
+  async updateMultipleOrderStatus(req, res) {
+    try {
+      const { status, locations, slot, reasonforcancel } = req.body;
+  
+      // Validate status
+      const validStatuses = [
+        "inprocess",
+        "Cooking",
+        "Packing",
+        "Ontheway",
+        "Delivered",
+        "Undelivered",
+        "Returned",
+        "Cancelled",
+        "On the way"
+      ];
+      
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+  
+      // Validate locations array
+      if (!locations || !Array.isArray(locations) || locations.length === 0) {
+        return res.status(400).json({ message: "Locations array is required" });
+      }
+  
+      // Get today's date range
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+  
+      // Build query for today's orders in specified locations
+      const query = {
+        delivarylocation: { $in: locations },
+        createdAt: {
+          $gte: startOfDay,
+          $lt: endOfDay
+        },
+        status: { $ne: status } 
+      };
+  
+      // Add slot filter if provided
+      if (slot) {
+        query.slot = slot;
+      }
+  
+      // Find orders matching the criteria
+      const orders = await customerCartModel.find(query);
+      
+      if (orders.length === 0) {
+        return res.status(404).json({ 
+          message: "No orders found for the specified criteria",
+          criteria: { locations, date: today.toDateString(), slot }
+        });
+      }
+  
+      // Update all matching orders
+      const updateData = {
+        status: status,
+        reasonforcancel: reasonforcancel || null,
+     
+      };
+  
+      // If status is 'Delivered', also update orderstatus
+      if (status === "Delivered") {
+        updateData.orderstatus = "Delivered";
+        
+      }
+  
+      const updateResult = await customerCartModel.updateMany(query, updateData);
+  
+      // Send success notifications for delivered orders
+      if (status === "Delivered") {
+        for (const order of orders) {
+          try {
+            await sendordSuccessfull(order?.orderid, order?.Mobilenumber);
+          } catch (notificationError) {
+            console.error(`Failed to send notification for order ${order.orderid}:`, notificationError);
+          }
+        }
+      }
+  
+      // Return response with update details
+      res.status(200).json({
+        message: "Orders updated successfully",
+        updatedCount: updateResult.modifiedCount,
+        totalFound: orders.length,
+        criteria: {
+          status,
+          locations,
+          slot,
+          date: today.toDateString()
+        },
+        updatedOrders: orders.map(order => ({
+          orderId: order.orderid,
+          id: order._id,
+          location: order.location,
+          previousStatus: order.status
+        }))
+      });
+  
+    } catch (error) {
+      console.error("Error in updateMultipleOrderStatus:", error);
+      res.status(500).json({ message: "Server error", error: error.message });
+    }
+  }
+
   async updateOrderStatus(req, res) {
     try {
       const { id } = req.params; // Order ID
@@ -405,6 +512,7 @@ class customerCart {
         "Undelivered",
         "Returned",
         "Cancelled",
+        "On the way"
       ];
       if (!validStatuses.includes(newStatus)) {
         return res.status(400).json({ message: "Invalid status" });
@@ -506,12 +614,12 @@ async getPackerOrders(req, res) {
     // Query only today's orders with specific statuses
     let query = {
       status: { $in: ["Pending", "Partially Packed", "Packed", "Cooking", "Packing"] },
-      // createdAt: { $gte: startOfDay, $lte: endOfDay },
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
     };
 
     const orders = await customerCartModel
       .find(query)
-      .populate("allProduct.foodItemId").limit(4)
+      .populate("allProduct.foodItemId")
       // .sort({ createdAt: -1 });
 
     if (!orders.length) {
@@ -528,8 +636,6 @@ async getPackerOrders(req, res) {
 // PUT /api/packer/orders/:id - Update order details (status, bagNo, driver, items, etc.)
 async updatePackerOrder(req, res) {
   try {
-  
-
     const {
       id,
       status,

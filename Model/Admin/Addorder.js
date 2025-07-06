@@ -321,6 +321,7 @@ const customerorderSchema = new mongoose.Schema(
         "Pending",
         "Partially Packed",
         "Packed",
+        'On the way'
       ],
     },
     bagNo: {
