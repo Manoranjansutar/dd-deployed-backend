@@ -24,7 +24,7 @@ const checkDateOverlap = async (startDate, endDate, excludeOfferId = null) => {
 
 exports.createOffer = async (req, res) => {
     try {
-        const { products, startDate, endDate } = req.body;
+        const { products, startDate, endDate,hubId,hubName,locations } = req.body;
 
         // Validate input
         if (!products || !Array.isArray(products) || !startDate || !endDate) {
@@ -47,7 +47,7 @@ exports.createOffer = async (req, res) => {
         }
 
         // Create and save new offer
-        const offer = new Offer({ products, startDate: start, endDate: end });
+        const offer = new Offer({ products, startDate: start, endDate: end ,hubId,hubName,locations });
         await offer.save();
         res.status(201).json({ message: 'Offer created successfully', offer });
     } catch (error) {
@@ -70,7 +70,8 @@ exports.getUserOffers = async (req, res) => {
     try {
         const currentDate = new Date();
         let id = req.query.id;
-        // console.log("id", id)
+        let location = req.query.location;
+        // console.log("location", location)
 
         if (!id) return res.status(200).json({
             success: true,
@@ -84,6 +85,7 @@ exports.getUserOffers = async (req, res) => {
         const offers = await Offer.findOne({
             startDate: { $lte: currentDate },
             endDate: { $gte: currentDate },
+            locations: { $in: [location] }
         }).select('products startDate endDate'); // Select only necessary fields
 
         if (!offers) {
@@ -130,7 +132,7 @@ exports.deleteOffer = async (req, res) => {
 exports.updateOffer = async (req, res) => {
     try {
         const offerId = req.params.id;
-        const { products, startDate, endDate } = req.body;
+        const { products, startDate, endDate ,hubId,hubName,locations } = req.body;
 
         // Validate input
         if (!products || !Array.isArray(products) || !startDate || !endDate) {
@@ -155,7 +157,7 @@ exports.updateOffer = async (req, res) => {
         // Update offer
         const updatedOffer = await Offer.findByIdAndUpdate(
             offerId,
-            { products, startDate: start, endDate: end },
+            { products, startDate: start, endDate: end ,hubId,hubName,locations },
             { new: true }
         );
         if (!updatedOffer) {

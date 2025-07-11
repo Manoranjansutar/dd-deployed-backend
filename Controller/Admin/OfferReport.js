@@ -12,8 +12,8 @@ exports.getReports = async (req, res) => {
 
 exports.createReport=async(req,res)=>{
     try {
-        let {customerName,phone,totalOrders,product,cartValue,offerPrice}=req.body;
-        await Report.create({customerName,phone,totalOrders,product,cartValue,offerPrice});
+        let {customerName,phone,totalOrders,product,cartValue,offerPrice,location}=req.body;
+        await Report.create({customerName,phone,totalOrders,product,cartValue,offerPrice,location});
 
         return res.status(200).json({data:"Success"})
     } catch (error) {
@@ -25,7 +25,7 @@ exports.exportReports = async (req, res) => {
   try {
     const reports = await Report.find().sort({ orderDate: -1 });
     const csv = [
-      'Customer Name,Phone,Order Date,Total Orders,Product,Cart Value,Offer Price',
+      'Customer Name,Phone,Order Date,Total Orders,Product,Cart Value,Offer Price,location',
       ...reports.map(r =>
         `${r.customerName},${r.phone},${r.orderDate.toISOString()},${r.totalOrders},${r.product},${r.cartValue},${r.offerPrice}`
       ),

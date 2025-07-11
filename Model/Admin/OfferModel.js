@@ -19,6 +19,7 @@ const offerSchema = new mongoose.Schema({
   }],
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
+  hubId:{type:String},hubName:{type:String},locations:[],
   createdAt: { type: Date, default: Date.now },
 });
 

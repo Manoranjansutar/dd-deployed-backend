@@ -6,6 +6,7 @@ const reportSchema = new mongoose.Schema({
   orderDate: { type: Date, default: Date.now  },
   totalOrders: { type: Number, required: true },
   product: { type: String, required: true },
+  location: { type: String, },
   cartValue: { type: Number, required: true },
   offerPrice: { type: Number, required: true },
   createdAt: { type: Date, default: Date.now },

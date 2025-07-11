@@ -76,6 +76,35 @@ const AddRestaurants = new Schema(
     loadtime: {
       type: String,
     },
+    locationPrice:[{
+      hubId:{
+        type:String,
+      },
+      foodprice:{
+        type:Number,
+        default:0
+      },
+      totalstock:{
+        type:Number,
+        default:0
+      },
+      hubName:{
+        type:String,
+      },
+      loccationAdreess:[],
+      Remainingstock:{
+        type:Number,
+        default:0
+      },
+      Priority:{
+        type: Number, 
+        default:0
+       },
+       offerprice: {
+        type: Number,
+      },
+      
+    }]
 
   },
   { timestamps: true }

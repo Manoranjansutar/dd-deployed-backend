@@ -27,4 +27,11 @@ router.put("/addFoodItemnewImage",upload.any(), Restocontroller.addFoodItemnewIm
 router.put("/toggleFoodItemStatus/:id", Restocontroller.toggleFoodItemStatus);
 router.put("/toggleFoodItemApproval/:id", Restocontroller.toggleFoodItemApproval);
 router.put("/makeSoldout",Restocontroller.makeSoldout);
+
+
+router.post('/addProductHubWise/:productId',Restocontroller.addProductHubWise)
+router.put("/updatepruducthub/:productId/:hubId", Restocontroller.updatepruducthub);
+router.delete("/deleteHubPruduct/:productId/:hubId", Restocontroller.deleteHubPruduct);
+router.put("/makeSoldout",Restocontroller.makeSoldout);
+
 module.exports = router;
