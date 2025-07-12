@@ -1,7 +1,7 @@
 const customerCartModel = require('../../Model/Admin/Addorder');
 const ProductModel = require('../../Model/Admin/Addproduct');
 const CouponModel = require("../../Model/Admin/Coupon");
-const UserModel=require('../../Model/User/Userlist')
+const UserModel = require('../../Model/User/Userlist')
 const { default: mongoose } = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 const { default: axios } = require("axios");
@@ -240,22 +240,54 @@ class customerCart {
 
         }
         // Update the stock for each product in the order
+        // for (let item of allProduct) {
+
+        //   const product = await ProductModel.findById(item.foodItemId);
+        //   if (product) {
+        //     product.Remainingstock =product.Remainingstock>item.quantity ? product.Remainingstock-item.quantity:0;
+
+        //    product.locationPrice.map((ele)=>{
+        //     if(ele.loccationAdreess?.includes(delivarylocation)){
+        //         return {
+        //             ...ele,
+        //             Remainingstock:ele.Remainingstock-item.quantity
+        //         }
+        //     }else return ele
+
+        //     })
+
+        //     await product.save();
+        //   }
+        // }
         for (let item of allProduct) {
-          
           const product = await ProductModel.findById(item.foodItemId);
           if (product) {
-            product.Remainingstock -= item.quantity;
+            // Update main product remaining stock
+            product.Remainingstock = product.Remainingstock > item.quantity ?
+              product.Remainingstock - item.quantity : 0;
 
-            // Check if Remainingstock and totalstock are equal
-            // if (product.Remainingstock >= product.totalstock) {
-            //   product.blocked = true;
-            // }
+            // Update location-specific remaining stock
+            product.locationPrice = product.locationPrice.map((ele) => {
+              // Check if any location address matches the delivery location
+              const hasMatchingLocation = ele.loccationAdreess?.some(address =>
+                address.split(", ")[0] === delivarylocation
+              );
+
+              if (hasMatchingLocation) {
+                return {
+                  ...ele,
+                  Remainingstock: ele.Remainingstock > item.quantity ?
+                    ele.Remainingstock - item.quantity : 0
+                };
+              } else {
+                return ele;
+              }
+            });
 
             await product.save();
           }
         }
-
-          io?.emit("newOrder",{orderid,delivarylocation,allTotal,username})
+        io?.emit("newOrder", { orderid, delivarylocation, allTotal, username })
         return res.status(200).json({ success: "Order placed and stock updated" });
       }
     } catch (error) {
@@ -339,7 +371,7 @@ class customerCart {
       if (!data) return res.status(400).json({ error: "Order not found" });
       data.rate = rate;
       data.ratted = true;
-      
+
       if (comement) {
         data.comement = comement
       }
@@ -393,7 +425,7 @@ class customerCart {
   async updateMultipleOrderStatus(req, res) {
     try {
       const { status, locations, slot, reasonforcancel } = req.body;
-  
+
       // Validate status
       const validStatuses = [
         "inprocess",
@@ -406,21 +438,21 @@ class customerCart {
         "Cancelled",
         "On the way"
       ];
-      
+
       if (!validStatuses.includes(status)) {
         return res.status(400).json({ message: "Invalid status" });
       }
-  
+
       // Validate locations array
       if (!locations || !Array.isArray(locations) || locations.length === 0) {
         return res.status(400).json({ message: "Locations array is required" });
       }
-  
+
       // Get today's date range
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-  
+
       // Build query for today's orders in specified locations
       const query = {
         delivarylocation: { $in: locations },
@@ -428,39 +460,39 @@ class customerCart {
           $gte: startOfDay,
           $lt: endOfDay
         },
-        status: { $ne: status } 
+        status: { $ne: status }
       };
-  
+
       // Add slot filter if provided
       if (slot) {
         query.slot = slot;
       }
-  
+
       // Find orders matching the criteria
       const orders = await customerCartModel.find(query);
-      
+
       if (orders.length === 0) {
-        return res.status(404).json({ 
+        return res.status(404).json({
           message: "No orders found for the specified criteria",
           criteria: { locations, date: today.toDateString(), slot }
         });
       }
-  
+
       // Update all matching orders
       const updateData = {
         status: status,
         reasonforcancel: reasonforcancel || null,
-     
+
       };
-  
+
       // If status is 'Delivered', also update orderstatus
       if (status === "Delivered") {
         updateData.orderstatus = "Delivered";
-        
+
       }
-  
+
       const updateResult = await customerCartModel.updateMany(query, updateData);
-  
+
       // Send success notifications for delivered orders
       if (status === "Delivered") {
         for (const order of orders) {
@@ -471,7 +503,7 @@ class customerCart {
           }
         }
       }
-  
+
       // Return response with update details
       res.status(200).json({
         message: "Orders updated successfully",
@@ -490,7 +522,7 @@ class customerCart {
           previousStatus: order.status
         }))
       });
-  
+
     } catch (error) {
       console.error("Error in updateMultipleOrderStatus:", error);
       res.status(500).json({ message: "Server error", error: error.message });
@@ -550,10 +582,10 @@ class customerCart {
     try {
       const { companyId } = req.params;
 
-      const orders = await customerCartModel.find({ companyId:companyId }).populate("customerId").populate("allProduct.foodItemId").sort({ _id: -1 });
+      const orders = await customerCartModel.find({ companyId: companyId }).populate("customerId").populate("allProduct.foodItemId").sort({ _id: -1 });
 
 
-     return res.status(200).json({
+      return res.status(200).json({
         message: "Orders retrieved successfully",
         orders,
       });
@@ -572,170 +604,170 @@ class customerCart {
   //   next();
   // }
 
-// GET /api/packer/orders - Fetch orders assigned to the packer, filtered by location
+  // GET /api/packer/orders - Fetch orders assigned to the packer, filtered by location
 
 
-// async getPackerOrders(req, res) {
-//   try {
-   
-//     const { location } = req.query; // Get location from query parameter
+  // async getPackerOrders(req, res) {
+  //   try {
 
-//     let query = {
-    
-//       status: { $in: ["Pending", "Partially Packed", "Packed", "Cooking", "Packing"] },
-//     };
+  //     const { location } = req.query; // Get location from query parameter
 
-//     const orders = await customerCartModel
-//       .find(query)
-//       .populate("allProduct.foodItemId")
-//       .sort({ createdAt: -1 });
+  //     let query = {
 
-//     if (!orders.length) {
-//       return res.status(404).json({ message: "No orders found for this packer" });
-//     }
+  //       status: { $in: ["Pending", "Partially Packed", "Packed", "Cooking", "Packing"] },
+  //     };
 
-//     return res.status(200).json(orders);
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({ error: "Internal Server Error", details: error.message });
-//   }
-// }
-async getPackerOrders(req, res) {
-  try {
-    const { location } = req.query; // if needed for future filtering
+  //     const orders = await customerCartModel
+  //       .find(query)
+  //       .populate("allProduct.foodItemId")
+  //       .sort({ createdAt: -1 });
 
-    // Get today's date range
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+  //     if (!orders.length) {
+  //       return res.status(404).json({ message: "No orders found for this packer" });
+  //     }
 
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
+  //     return res.status(200).json(orders);
+  //   } catch (error) {
+  //     console.error(error);
+  //     return res.status(500).json({ error: "Internal Server Error", details: error.message });
+  //   }
+  // }
+  async getPackerOrders(req, res) {
+    try {
+      const { location } = req.query; // if needed for future filtering
 
-    // Query only today's orders with specific statuses
-    let query = {
-      status: { $in: ["Pending", "Partially Packed", "Packed", "Cooking", "Packing"] },
-      createdAt: { $gte: startOfDay, $lte: endOfDay },
-    };
+      // Get today's date range
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
 
-    const orders = await customerCartModel
-      .find(query)
-      .populate("allProduct.foodItemId")
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+
+      // Query only today's orders with specific statuses
+      let query = {
+        status: { $in: ["Pending", "Partially Packed", "Packed", "Cooking", "Packing"] },
+        createdAt: { $gte: startOfDay, $lte: endOfDay },
+      };
+
+      const orders = await customerCartModel
+        .find(query)
+        .populate("allProduct.foodItemId")
       // .sort({ createdAt: -1 });
 
-    if (!orders.length) {
-      return res.status(404).json({ message: "No orders found for today" });
-    }
+      if (!orders.length) {
+        return res.status(404).json({ message: "No orders found for today" });
+      }
 
-    return res.status(200).json(orders);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Internal Server Error", details: error.message });
+      return res.status(200).json(orders);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Internal Server Error", details: error.message });
+    }
   }
-}
 
-// PUT /api/packer/orders/:id - Update order details (status, bagNo, driver, items, etc.)
-async updatePackerOrder(req, res) {
-  try {
-    const {
-      id,
-      status,
-      bagNo,
-      driver,
-      reason,
-      packBefore,
-      allProduct,
-      timeLeft,
-      packer,
-      _id,
-      packername,packeTime
-    } = req.body;
+  // PUT /api/packer/orders/:id - Update order details (status, bagNo, driver, items, etc.)
+  async updatePackerOrder(req, res) {
+    try {
+      const {
+        id,
+        status,
+        bagNo,
+        driver,
+        reason,
+        packBefore,
+        allProduct,
+        timeLeft,
+        packer,
+        _id,
+        packername, packeTime
+      } = req.body;
 
 
-    // Find the order
-    let order = await customerCartModel.findById(_id).populate("allProduct.foodItemId");
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+      // Find the order
+      let order = await customerCartModel.findById(_id).populate("allProduct.foodItemId");
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Verify packer authorization
+      // if (order.packer && order.packer !== packer) {
+      //   return res.status(403).json({ message: "Not authorized to update this order" });
+      // }
+
+      // Validate status
+      const validStatuses = [
+        "Pending",
+        "Partially Packed",
+        "Packed",
+        "Cooking",
+        "Packing",
+        "Ontheway",
+        "Delivered",
+        "Undelivered",
+        "Returned",
+        "Cancelled",
+      ];
+      if (status && !validStatuses.includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+
+      // Update fields
+      if (status) order.status = status;
+      if (bagNo) order.bagNo = bagNo;
+      if (driver) order.driver = driver;
+      if (reason) order.reason = reason;
+      if (packBefore) order.packBefore = packBefore;
+      if (timeLeft) order.timeLeft = timeLeft;
+      if (packeTime) order.packeTime = packeTime
+      if (allProduct && Array.isArray(allProduct)) {
+        order.allProduct = allProduct.map((item) => ({
+          ...item,
+          packed: item.packed || false,
+          missing: item.missing || false,
+        }));
+      }
+      if (packer) {
+        order.packer = packer; // Ensure packer is assigned
+      }
+      if (packername) {
+        order.packername = packername
+      }
+      // console.log("rewww",req.body);
+
+      // Save updated order
+      order = await order.save();
+
+      return res.status(200).json({
+        message: "Order updated successfully",
+        order,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Internal Server Error", details: error.message });
     }
-
-    // Verify packer authorization
-    // if (order.packer && order.packer !== packer) {
-    //   return res.status(403).json({ message: "Not authorized to update this order" });
-    // }
-
-    // Validate status
-    const validStatuses = [
-      "Pending",
-      "Partially Packed",
-      "Packed",
-      "Cooking",
-      "Packing",
-      "Ontheway",
-      "Delivered",
-      "Undelivered",
-      "Returned",
-      "Cancelled",
-    ];
-    if (status && !validStatuses.includes(status)) {
-      return res.status(400).json({ message: "Invalid status" });
-    }
-
-    // Update fields
-    if (status) order.status = status;
-    if (bagNo) order.bagNo = bagNo;
-    if (driver) order.driver = driver;
-    if (reason) order.reason = reason;
-    if (packBefore) order.packBefore = packBefore;
-    if (timeLeft) order.timeLeft = timeLeft;
-    if(packeTime) order.packeTime=packeTime
-    if (allProduct && Array.isArray(allProduct)) {
-      order.allProduct = allProduct.map((item) => ({
-        ...item,
-        packed: item.packed || false,
-        missing: item.missing || false,
-      }));
-    }
-    if(packer){
-       order.packer = packer; // Ensure packer is assigned
-    }
-   if(packername){
-    order.packername=packername
-   }
-// console.log("rewww",req.body);
-
-    // Save updated order
-    order= await order.save();
-
-    return res.status(200).json({
-      message: "Order updated successfully",
-      order,
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Internal Server Error", details: error.message });
   }
-}
 
-// GET /api/packer/locations - Fetch available locations
-async getLocations(req, res) {
-  try {
-    const locations = ["Sector 10", "Sector 12", "Sector 15", "Sector 20"];
-    return res.status(200).json(locations);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Internal Server Error", details: error.message });
+  // GET /api/packer/locations - Fetch available locations
+  async getLocations(req, res) {
+    try {
+      const locations = ["Sector 10", "Sector 12", "Sector 15", "Sector 20"];
+      return res.status(200).json(locations);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Internal Server Error", details: error.message });
+    }
   }
-}
 
-// GET /api/packer/drivers - Fetch available drivers
-async getDrivers(req, res) {
-  try {
-    const drivers = ["Ravi", "Kartik", "Suresh", "Ramesh"];
-    return res.status(200).json(drivers);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Internal Server Error", details: error.message });
+  // GET /api/packer/drivers - Fetch available drivers
+  async getDrivers(req, res) {
+    try {
+      const drivers = ["Ravi", "Kartik", "Suresh", "Ramesh"];
+      return res.status(200).json(drivers);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Internal Server Error", details: error.message });
+    }
   }
-}
 
 }
 
