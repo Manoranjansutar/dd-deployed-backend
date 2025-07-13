@@ -103,6 +103,10 @@ const AddRestaurants = new Schema(
        offerprice: {
         type: Number,
       },
+      basePrice:{
+        type: Number,
+        default:0
+      }
       
     }]
 

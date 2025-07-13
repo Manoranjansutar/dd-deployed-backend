@@ -431,7 +431,8 @@ class AddRestaurantdata {
         loccationAdreess,
         Remainingstock,
         Priority,
-        offerprice
+        offerprice,
+        basePrice
       } = req.body;
   
       // Validate required fields
@@ -472,7 +473,8 @@ class AddRestaurantdata {
         loccationAdreess: loccationAdreess || [],
         Remainingstock: Remainingstock || 0,
         Priority: Priority || 0,
-        offerprice: offerprice || 0
+        offerprice: offerprice || 0,
+        basePrice:basePrice||0
       };
   
       foodItem.locationPrice.push(newLocationPrice);

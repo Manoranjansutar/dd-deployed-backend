@@ -6,6 +6,6 @@ router.post('/offers', offerController.createOffer);
 router.get('/offers', offerController.getOffers);
 router.delete('/offers/:id', offerController.deleteOffer);
 router.put('/offers/:id', offerController.updateOffer);
-router.get("/getuseroffer",offerController.getUserOffers);
+router.put("/getuseroffer",offerController.getUserOffers);
 
 module.exports = router;
