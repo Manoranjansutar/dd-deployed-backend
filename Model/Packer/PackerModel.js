@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 // Packer Schema with auto-generated ID
 const packerSchema = new mongoose.Schema({
-    packerId: { type: String, },
+    packerId: { type: String, unique: true },
     username: { type: String, required: true },
     mobileNumber: {
         type: String,
@@ -16,12 +16,25 @@ const packerSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
-// Auto-generate packerId (DDP001, DDP002, etc.)
+// Solution 1: Find the highest existing packerId and increment
 packerSchema.pre('save', async function (next) {
     if (!this.packerId) {
         try {
-            const count = await this.constructor.countDocuments();
-            this.packerId = `DDPA00${String(count + 1).padStart(3, '0')}`;
+            // Find the document with the highest packerId
+            const lastPacker = await this.constructor.findOne(
+                { packerId: { $regex: /^DDPA\d+$/ } },
+                { packerId: 1 }
+            ).sort({ packerId: -1 });
+
+            let nextNumber = 1;
+            if (lastPacker && lastPacker.packerId) {
+                // Extract the number from the last packerId (e.g., "DDPA001" -> 1)
+                const lastNumber = parseInt(lastPacker.packerId.replace('DDPA', ''));
+                nextNumber = lastNumber + 1;
+            }
+
+            // Format the new packerId
+            this.packerId = `DDPA${String(nextNumber).padStart(3, '0')}`;
             next();
         } catch (error) {
             next(error);

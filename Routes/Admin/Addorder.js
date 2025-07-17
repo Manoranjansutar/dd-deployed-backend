@@ -7,6 +7,7 @@ router.get("/getfoodorder/:id",CartController.getfoodorder);
 router.get("/getfoodorderId/:id",CartController.getfoodorderId);
 router.get("/getallordersbyUserId/:id",CartController.getallordersbyUserId);
 router.get("/getallorders",CartController.getallorders);
+router.get("/getallordersfilter",CartController.getallordersfilter);
 router.put("/updateOrderStatus/:id",CartController.updateOrderStatus);
 router.delete("/deletefoodorder/:id",CartController.deletefoodorder);
 router.get("/getorderNotRatedByUserID/:customerId",CartController.getorderNotRatedByUserID);

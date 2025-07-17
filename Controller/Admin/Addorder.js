@@ -391,6 +391,157 @@ class customerCart {
       return res.status(500).json({ error: "something went wrong" });
     }
   }
+// Backend API Controller
+async getallordersfilter(req, res) {
+  try {
+    const {
+      page = 1,
+      limit = 6,
+      search = '',
+      startDate,
+      endDate,
+      slot,
+      locations,
+      status,
+      orderType = 'corporate',
+      hub // New hub filter parameter
+    } = req.query;
+
+    // Build filter object
+    let filter = {};
+    
+    // Filter by order delivery type
+    if (orderType) {
+      filter.orderdelivarytype = orderType;
+    }
+
+    // Hub filter - assuming you have a hub field in your model
+    if (hub && hub !== 'all') {
+      filter.hub = hub;
+    }
+
+    // Status filter
+    if (status && status !== '') {
+      filter.status = status;
+    }
+
+    // Slot filter
+    if (slot && slot !== '') {
+      filter.slot = slot;
+    }
+
+    // Location filter (multiple locations)
+    if (locations) {
+      const locationArray = Array.isArray(locations) ? locations : [locations];
+      filter.delivarylocation = { $in: locationArray };
+    }
+
+    // Date range filter
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      
+      filter.createdAt = {
+        $gte: start,
+        $lte: end
+      };
+    }
+
+    // Search filter - searches across multiple fields
+    if (search && search.trim() !== '') {
+      const searchRegex = new RegExp(search.trim(), 'i');
+    
+      const orFilters = [
+        { username: searchRegex },
+        { orderid: searchRegex },
+        { delivarylocation: searchRegex },
+        { apartment: searchRegex },
+        { status: searchRegex },
+        { paymentmethod: searchRegex }
+      ];
+    
+      // अगर मोबाइल नंबर है और वो pure number है तो उसी को number के रूप में चेक करो
+      if (!isNaN(search.trim())) {
+        orFilters.push({ Mobilenumber: Number(search.trim()) });
+      }
+    
+      filter.$or = orFilters;
+    }
+    
+    // console.log("filter",filter);
+    
+
+    // Calculate pagination
+    const pageNumber = parseInt(page);
+    const pageSize = parseInt(limit);
+    const skip = (pageNumber - 1) * pageSize;
+
+    // Get total count for pagination
+    const totalCount = await customerCartModel.countDocuments(filter);
+    const totalPages = Math.ceil(totalCount / pageSize);
+
+    // Fetch orders with pagination and populate
+    const orders = await customerCartModel
+      .find(filter)
+      .populate("allProduct.foodItemId")
+      .sort({ createdAt: -1 }) // Sort by newest first
+      .skip(skip)
+      .limit(pageSize);
+
+    // Get unique values for filters (for today's orders)
+    const today = new Date();
+    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+
+    const todayFilter = {
+      ...filter,
+      createdAt: {
+        $gte: startOfDay,
+        $lte: endOfDay
+      }
+    };
+
+    // Get unique slots for today
+    const uniqueSlots = await customerCartModel.distinct('slot', todayFilter);
+    
+    // Get unique locations for today
+    const uniqueLocations = await customerCartModel.distinct('delivarylocation', todayFilter);
+    
+    // Get unique hubs
+    const uniqueHubs = await customerCartModel.distinct('hub', { orderdelivarytype: orderType });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        orders: orders,
+        pagination: {
+          currentPage: pageNumber,
+          totalPages: totalPages,
+          totalCount: totalCount,
+          pageSize: pageSize,
+          hasNext: pageNumber < totalPages,
+          hasPrev: pageNumber > 1
+        },
+        filters: {
+          slots: uniqueSlots,
+          locations: uniqueLocations,
+          hubs: uniqueHubs
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in getallorders:', error);
+    return res.status(500).json({ 
+      success: false,
+      error: "Something went wrong",
+      message: error.message 
+    });
+  }
+}
+  
 
   async getallordersbyUserId(req, res) {
     let id = req.params.id

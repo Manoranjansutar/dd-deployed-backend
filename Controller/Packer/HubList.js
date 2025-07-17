@@ -1,11 +1,10 @@
 const HubModel = require("../../Model/Packer/HubModel");
+const ProductModel=require('../../Model/Admin/Addproduct');
 
 class Hub {
   async createHub(req, res) {
     try {
       const { hubName, locations } = req.body;
-
-
       // Input validation
       if (!hubName) return res.status(400).json({ error: "Please enter hub name" });
 
@@ -39,6 +38,7 @@ class Hub {
       // Find hub
       const hub = await HubModel.findOne({ hubId });
       if (!hub) return res.status(404).json({ error: "Hub not found" });
+console.log("hubid",hubId);
 
       // Check for duplicate hub name
       const existingHub = await HubModel.findOne({ hubName, hubId: { $ne: hubId } });
@@ -47,6 +47,15 @@ class Hub {
       // Update hub
       hub.hubName = hubName;
       hub.locations = locations;
+      await ProductModel.updateMany(
+        { "locationPrice.hubId": hubId },
+        {
+          $set: {
+            "locationPrice.$.hubName": hubName,
+            "locationPrice.$.loccationAdreess": locations
+          }
+        }
+      );
       await hub.save();
       res.status(200).json({ message: "Hub updated successfully", hub });
     } catch (error) {
@@ -59,6 +68,18 @@ class Hub {
       const { hubId } = req.params;
       const hub = await HubModel.findOneAndDelete({ hubId });
       if (!hub) return res.status(404).json({ message: "Hub not found" });
+      // console.log();
+      
+      const productUpdateResult = await ProductModel.updateMany(
+        { "locationPrice.hubId": hubId },
+        {
+          $pull: {
+            locationPrice: { hubId: hubId }
+          }
+        }
+      );
+  
+      console.log(`Removed hubId ${hubId} from ${productUpdateResult.modifiedCount} products`);
       res.status(200).json({ message: "Hub deleted successfully" });
     } catch (error) {
       res.status(400).json({ message: "Error deleting hub", error: error.message });

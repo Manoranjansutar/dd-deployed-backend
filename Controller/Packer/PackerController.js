@@ -205,7 +205,7 @@ class Packer {
             if (!packer) return res.status(404).json({ message: 'Packer not found' });
             res.status(200).json({ message: 'Packer deleted successfully' });
         } catch (error) {
-            res.status(400).json({ message: 'Error deleting packer', error: error.message });
+            res.status(400).json({ error: 'Error deleting packer', message: error.message });
         }
     }
 
