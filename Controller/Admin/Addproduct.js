@@ -108,7 +108,7 @@ class AddRestaurantdata {
       }
 
       // Object to hold update fields
-      let obj = { Priority };
+      let obj = {  };
       let Foodgallery = [];
 
       // Check if files are uploaded and process them for Foodgallery
@@ -135,16 +135,19 @@ class AddRestaurantdata {
       if (typeof recommended !== "undefined") obj["recommended"] = recommended;
       if (typeof approved !== "undefined") obj["approved"] = approved;
       if (typeof blocked !== "undefined") obj["blocked"] = blocked;
-      if (totalstock !== undefined) obj["totalstock"] = totalstock;
-      if (Remainingstock !== undefined) obj["Remainingstock"] = Remainingstock;
+      // if (totalstock !== undefined) obj["totalstock"] = totalstock;
+      // if (Remainingstock !== undefined) obj["Remainingstock"] = Remainingstock;
       if (gst !== undefined) obj["gst"] = gst;
       if (discount !== undefined) obj["discount"] = discount;
       if (offerprice !== undefined) obj["offerprice"] = offerprice;
       if (totalprice !== undefined) obj["totalprice"] = totalprice;
       if (unit) obj["unit"] = unit;
-      if (quantity) obj["quantity"] = quantity;
+      // if (quantity) obj["quantity"] = quantity;
       if (loaddate) obj["loaddate"] = loaddate;
       if (loadtime) obj["loadtime"] = loadtime;
+
+      console.log(obj);
+      
 
       // Find food item by ID and update
       let data = await AddRestaurants.findByIdAndUpdate(
