@@ -61,7 +61,7 @@ class AddRestaurantdata {
         loaddate,
         loadtime,
         Foodgallery,  // Add gallery images
-        Priority,
+       
       });
 
       // Save the new food item in the database
@@ -142,7 +142,7 @@ class AddRestaurantdata {
       if (offerprice !== undefined) obj["offerprice"] = offerprice;
       if (totalprice !== undefined) obj["totalprice"] = totalprice;
       if (unit) obj["unit"] = unit;
-      // if (quantity) obj["quantity"] = quantity;
+      if (quantity) obj["quantity"] = quantity;
       if (loaddate) obj["loaddate"] = loaddate;
       if (loadtime) obj["loadtime"] = loadtime;
 
