@@ -216,48 +216,98 @@ class AddRestaurantdata {
   //     return res.status(500).json({ error: "Internal Server Error" });
   //   }
   // }
-  async getFoodItemsUnBlocks(req, res) {
-    try {
-      const restaurant = await AddRestaurants.aggregate([
-        { $match: { blocked: false } },
-        {
-          $addFields: {
-            minLocationPriority: {
-              $min: {
-                $map: {
-                  input: "$locationPrice",
-                  as: "location",
-                  in: { $ifNull: ["$$location.Priority", 0] }
-                }
-              }
-            }
-          }
-        },
-        { $sort: { minLocationPriority: 1 } },
-        {
-          $addFields: {
-            locationPrice: {
-              $sortArray: {
+//   async getFoodItemsUnBlocks(req, res) {
+//     try {
+//       const restaurant = await AddRestaurants.aggregate([
+//         { $match: { blocked: false } },
+//         {
+//           $addFields: {
+//             minLocationPriority: {
+//               $min: {
+//                 $map: {
+//                   input: "$locationPrice",
+//                   as: "location",
+//                   in: { $ifNull: ["$$location.Priority", 0] }
+//                 }
+//               }
+//             }
+//           }
+//         },
+//         { $sort: { minLocationPriority: 1 } },
+//         {
+//           $addFields: {
+//             locationPrice: {
+//               $sortArray: {
+//                 input: "$locationPrice",
+//                 sortBy: { Priority: 1 }
+//               }
+//             }
+//           }
+//         }
+//       ]);
+
+//       // if (!restaurant || restaurant.length === 0) {
+//       //   return res.status(404).json({ error: "Restaurant not found" });
+//       // }
+
+//       return res.status(200).json({ 
+//         success: "Food items retrieved successfully", 
+//         data: restaurant 
+//       });
+//     } catch (error) {
+//       console.error("Error retrieving food items:", error);
+//       return res.status(500).json({ error: "Internal Server Error" });
+//     }
+// }
+
+
+async getFoodItemsUnBlocks(req, res) {
+  try {
+    const restaurant = await AddRestaurants.aggregate([
+      { 
+        $match: { 
+          blocked: false,
+          locationPrice: { $exists: true, $ne: null, $not: { $size: 0 } }
+        } 
+      },
+      {
+        $addFields: {
+          minLocationPriority: {
+            $min: {
+              $map: {
                 input: "$locationPrice",
-                sortBy: { Priority: 1 }
+                as: "location",
+                in: { $ifNull: ["$$location.Priority", 0] }
               }
             }
           }
         }
-      ]);
+      },
+      { $sort: { minLocationPriority: 1 } },
+      {
+        $addFields: {
+          locationPrice: {
+            $sortArray: {
+              input: "$locationPrice",
+              sortBy: { Priority: 1 }
+            }
+          }
+        }
+      }
+    ]);
 
-      // if (!restaurant || restaurant.length === 0) {
-      //   return res.status(404).json({ error: "Restaurant not found" });
-      // }
+    // if (!restaurant || restaurant.length === 0) {
+    //   return res.status(404).json({ error: "No restaurants found with location pricing" });
+    // }
 
-      return res.status(200).json({ 
-        success: "Food items retrieved successfully", 
-        data: restaurant 
-      });
-    } catch (error) {
-      console.error("Error retrieving food items:", error);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
+    return res.status(200).json({ 
+      success: "Food items retrieved successfully", 
+      data: restaurant 
+    });
+  } catch (error) {
+    console.error("Error retrieving food items:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
 }
   async deleteFoodItem(req, res) {
     try {
