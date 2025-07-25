@@ -10,7 +10,7 @@ const path = require("path");
 // Middleware
 app.use(express.json());
 app.use(cors());
-app.use(morgan("dev"));
+// app.use(morgan("dev"));
 app.use(express.static("Public"));
 
 const mongoose = require("mongoose");

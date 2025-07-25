@@ -327,7 +327,7 @@ async getFoodItemsUnBlocks(req, res) {
     try {
       const { id, packid } = req.body;
 
-      console.log("gsd", id, packid)
+
 
       const deletegallery = await AddRestaurants.findByIdAndUpdate(
         { _id: packid },

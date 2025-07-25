@@ -16,5 +16,10 @@ router.get('/getAllOrdersByCompanyId/:companyId', CartController.getAllOrderByCo
 router.get('/getPackerOrders',CartController.getPackerOrders);
 router.put("/updatePackerOrder",CartController.updatePackerOrder);
 router.get("/getDrivers",CartController.getDrivers);
-router.put("/updateMultipleOrderStatus",CartController.updateMultipleOrderStatus)
+router.put("/updateMultipleOrderStatus",CartController.updateMultipleOrderStatus);
+router.get("/exportExcelOrder",CartController.exportExcelOrder);
+router.get("/getAllOrderCount",CartController.getAllOrderCount);
+router.get("/getAllAppartmentOrder",CartController.getAllAppartmentOrder);
+
+
 module.exports=router;
