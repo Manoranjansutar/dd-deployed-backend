@@ -29,6 +29,10 @@ const phonepaytransaction = new mongoose.Schema(
       config:{
         type:String  
       },
+
+      offerconfig:{
+        type:String  
+      },
          cartId:{
         type:String  
       },

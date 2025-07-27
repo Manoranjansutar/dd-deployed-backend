@@ -9,7 +9,7 @@ const CartModel=require("../../Model/User/Cart");
 class Transaction{
       async addPaymentPhone(req, res) {
     try {
-      let { userId, username, Mobile, orderId, amount, transactionid,config,  cartId,
+      let { userId, username, Mobile, orderId, amount, transactionid,config,  cartId,offerconfig,
     cart_id,} =
         req.body;
       let data = await transactionModel.create({
@@ -20,6 +20,7 @@ class Transaction{
         amount,
         config,
           cartId,
+          offerconfig,
     cart_id,
       });
       if (!data) return res.status(400).json({ error: "Something went worng" });
@@ -136,6 +137,10 @@ console.log(responseJson?.data);
        }else{
            console.log("working",data.userId)
          await  CartModel.findOneAndUpdate({userId:data.userId,status:"Added"},{$set:{status:state}})
+       }
+
+       if(state=="COMPLETED"&& data.offerconfig){
+          axios(JSON.parse(data.offerconfig))
        }
     await data.save()
  }

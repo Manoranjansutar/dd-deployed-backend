@@ -8,6 +8,8 @@ const { default: axios } = require("axios");
 const Wallet = require("../../Model/User/Wallet");
 const CartModel = require('../../Model/User/Cart')
 const ReportModel = require('../../Model/Admin/OfferReports');
+const ExcelJS = require('exceljs');
+const moment = require('moment');
 
 async function sendorderwhatsapp(oderid, user, mobile, slote, location) {
   try {
@@ -566,7 +568,7 @@ async getallordersfilter(req, res) {
 }
   
 
-async exportExcelOrder (req,res){
+async exportExcelOrder(req, res) {
   try {
     const {
       search = '',
@@ -576,39 +578,33 @@ async exportExcelOrder (req,res){
       locations,
       status,
       orderType = 'corporate',
-      hub // New hub filter parameter
+      hub
     } = req.query;
 
     // Build filter object
     let filter = {};
     
-    // Filter by order delivery type
     if (orderType) {
       filter.orderdelivarytype = orderType;
     }
 
-    // Hub filter - assuming you have a hub field in your model
     if (hub && hub !== 'all') {
       filter.hub = hub;
     }
 
-    // Status filter
     if (status && status !== '') {
       filter.status = status;
     }
 
-    // Slot filter
     if (slot && slot !== '') {
       filter.slot = slot;
     }
 
-    // Location filter (multiple locations)
     if (locations) {
       const locationArray = Array.isArray(locations) ? locations : [locations];
       filter.delivarylocation = { $in: locationArray };
     }
 
-    // Date range filter
     if (startDate && endDate) {
       const start = new Date(startDate);
       start.setHours(0, 0, 0, 0);
@@ -621,10 +617,9 @@ async exportExcelOrder (req,res){
       };
     }
 
-    // Search filter - searches across multiple fields
     if (search && search.trim() !== '') {
       const searchRegex = new RegExp(search.trim(), 'i');
-    
+      
       const orFilters = [
         { username: searchRegex },
         { orderid: searchRegex },
@@ -633,35 +628,158 @@ async exportExcelOrder (req,res){
         { status: searchRegex },
         { paymentmethod: searchRegex }
       ];
-    
-      // अगर मोबाइल नंबर है और वो pure number है तो उसी को number के रूप में चेक करो
+      
       if (!isNaN(search.trim())) {
         orFilters.push({ Mobilenumber: Number(search.trim()) });
       }
-    
+      
       filter.$or = orFilters;
     }
 
+    // console.log("Filter applied:", filter);
+
+    // Use lean() for better performance and limit memory usage
     const orders = await customerCartModel
       .find(filter)
       .populate("allProduct.foodItemId")
-      .sort({ createdAt: -1 }) // Sort by newest first
+      .sort({ createdAt: -1 })
+      .lean(); // Use lean() for better performance
 
+    // Check if dataset is too large
+    if (orders.length > 50000) {
+      return res.status(400).json({
+        success: false,
+        error: "Dataset too large. Please apply filters to reduce the number of records."
+      });
+    }
 
-    return res.status(200).json({
-      success: true,
+    // Create Excel workbook and worksheet
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Corporate Bookings');
+
+    // Define columns with proper formatting
+    worksheet.columns = [
+      { header: 'S.No', key: 'sno', width: 8 },
+      { header: 'Date', key: 'date', width: 20 },
+      { header: 'Order ID', key: 'orderid', width: 15 },
+      { header: 'Order Status', key: 'status', width: 15 },
+      { header: 'Customer', key: 'customer', width: 20 },
+      { header: 'Phone', key: 'phone', width: 15 },
+      // { header: 'Hub', key: 'hub', width: 15 },
+      { header: 'Slot Data', key: 'slotsdata', width: 15 },
+      { header: 'Category Name', key: 'categoryname', width: 30 },
+      { header: 'Product Name', key: 'productname', width: 40 },
+      { header: 'Unit', key: 'unit', width: 20 },
+      { header: 'Cutlery', key: 'cutlery', width: 10 },
+      { header: 'Address', key: 'address', width: 40 },
+      // { header: 'Delivery Charge', key: 'deliverycharge', width: 15 },
+      // { header: 'Delivery Type', key: 'deliverytype', width: 15 },
+      { header: 'Apply Wallet', key: 'applywallet', width: 12 },
+      { header: 'Apply Coupon', key: 'applycoupon', width: 12 },
+      { header: 'Total Amount', key: 'totalamount', width: 15 },
+      { header: 'Rating', key: 'rating', width: 12 },
+      { header: 'Comment', key: 'comment', width: 30 }
+    ];
+
+    // Style the header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' }
+    };
+
+    // Process data in chunks to avoid memory issues
+    const chunkSize = 1000;
+    let rowIndex = 2; // Start from row 2 (after header)
+
+    for (let i = 0; i < orders.length; i += chunkSize) {
+      const chunk = orders.slice(i, i + chunkSize);
       
-        orders: orders,
- 
-    });
+      chunk.forEach((item, index) => {
+        const globalIndex = i + index;
+        
+        // Safely extract product information
+        const categories = item?.allProduct?.map(product => 
+          product?.foodItemId?.foodcategory || 'N/A'
+        ).join(", ") || "N/A";
+        
+        const products = item?.allProduct?.map(product => 
+          `${product?.foodItemId?.foodname || 'N/A'} - (${product?.quantity || '0'}.Qty)`
+        ).join(", ") || "N/A";
+        
+        const units = item?.allProduct?.map(product => 
+          product?.foodItemId?.unit || 'N/A'
+        ).join(", ") || "N/A";
+
+        const row = worksheet.addRow({
+          sno: globalIndex + 1,
+          date: moment(item?.createdAt).format("MM/DD/YYYY, hh:mm A"),
+          orderid: item?.orderid || 'N/A',
+          status: item?.status || 'N/A',
+          customer: item?.username || 'N/A',
+          phone: item?.Mobilenumber || 'N/A',
+        
+          slotsdata: item?.slot || 'N/A',
+          categoryname: categories,
+          productname: products,
+          unit: units,
+          cutlery: item?.Cutlery || 'No',
+          address: item?.delivarylocation || 'N/A',
+          deliverycharge: item?.delivarytype || 'N/A',
+    
+          applywallet: item?.discountWallet || 'No',
+          applycoupon: item?.coupon || 'No',
+          totalamount: item?.allTotal || '0',
+          rating: item?.rate || 'Not Rated',
+          comment: item?.comement || 'No Comment'
+        });
+
+        // Add alternating row colors for better readability
+        if (globalIndex % 2 === 0) {
+          row.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF8F8F8' }
+          };
+        }
+      });
+
+      // Log progress for large datasets
+      // if (orders.length > 5000) {
+      //   console.log(`Processed ${Math.min(i + chunkSize, orders.length)} of ${orders.length} records...`);
+      // }
+    }
+
+    // Set response headers for Excel download
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="Corporate_Bookings_${moment().format('YYYY-MM-DD_HH-mm')}.xlsx"`
+    );
+
+    // Stream the Excel file directly to response
+    await workbook.xlsx.write(res);
+    
+    console.log(`Excel export completed successfully. Total records: ${orders.length}`);
+    
+    // End the response
+    res.end();
 
   } catch (error) {
-    console.error('Error in getallorders:', error);
-    return res.status(500).json({ 
-      success: false,
-      error: "Something went wrong",
-      message: error.message 
-    });
+    console.error('Error in exportExcelOrder:', error);
+    
+    // Make sure response hasn't been sent already
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        error: "Excel export failed",
+        message: error.message
+      });
+    }
   }
 }
 
