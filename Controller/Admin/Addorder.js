@@ -352,7 +352,7 @@ class customerCart {
       const order = await customerCartModel.findOne({ customerId: customerId, ratted: false, status: "Delivered" }).populate("allProduct.foodItemId");
 
       if (!order) {
-        return res.status(404).json({ message: "Order not found" });
+        return res.status(400).json({ message: "Order not found" });
       }
 
       res.status(200).json({
