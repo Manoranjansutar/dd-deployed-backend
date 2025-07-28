@@ -21,5 +21,7 @@ router.get("/exportExcelOrder",CartController.exportExcelOrder);
 router.get("/getAllOrderCount",CartController.getAllOrderCount);
 router.get("/getAllAppartmentOrder",CartController.getAllAppartmentOrder);
 
+router.get("/getallorderssales",CartController.getallorderssales);
+router.get("/getSalesReport",CartController.getSalesReport)
 
 module.exports=router;

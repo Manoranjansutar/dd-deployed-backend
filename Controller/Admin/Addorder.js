@@ -393,7 +393,284 @@ class customerCart {
       return res.status(500).json({ error: "something went wrong" });
     }
   }
+// Updated backend controller with filtering
+async getallorderssales(req, res) {
+  try {
+      const { 
+          startDate, 
+          endDate, 
+          hubId, 
+          locations,
+          sortOrder = 'desc' 
+      } = req.query;
 
+      let matchStage = {};
+      
+      // Date filtering
+      if (startDate || endDate) {
+          matchStage.createdAt = {};
+          if (startDate) {
+              matchStage.createdAt.$gte = new Date(startDate);
+          }
+          if (endDate) {
+              const endDateTime = new Date(endDate);
+              endDateTime.setHours(23, 59, 59, 999);
+              matchStage.createdAt.$lte = endDateTime;
+          }
+      } else {
+          // Default to today if no date filters provided
+          const today = new Date();
+          const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+          const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+          matchStage.createdAt = {
+              $gte: startOfDay,
+              $lte: endOfDay
+          };
+      }
+
+      // Location filtering
+      if (locations && locations.length > 0) {
+          const locationArray = Array.isArray(locations) ? locations : [locations];
+          matchStage.delivarylocation = {
+              $regex: new RegExp(`^(${locationArray.join('|')}),`, 'i')
+          };
+      }
+
+      const pipeline = [
+          { $match: matchStage },
+          {
+              $lookup: {
+                  from: "fooditems", // Your food items collection name
+                  localField: "allProduct.foodItemId",
+                  foreignField: "_id",
+                  as: "populatedProducts"
+              }
+          },
+          {
+              $sort: {
+                  createdAt: sortOrder === 'desc' ? -1 : 1
+              }
+          }
+      ];
+
+      const orders = await customerCartModel.aggregate(pipeline);
+
+      return res.status(200).json({ 
+          order: orders,
+          totalCount: orders.length,
+          filters: {
+              startDate,
+              endDate,
+              hubId,
+              locations,
+              sortOrder
+          }
+      });
+  } catch (error) {
+      console.error("Error fetching orders:", error);
+      return res.status(500).json({ error: "Something went wrong" });
+  }
+}
+
+// Additional endpoint for getting sales report data
+async getSalesReport(req, res) {
+  try {
+      const { 
+          startDate, 
+          endDate, 
+          hubId, 
+          locations,
+          searchTerm,
+          sortOrder = 'desc' 
+      } = req.query;
+
+      let dateFilter = {};
+      
+      // Date filtering - default to today
+      if (startDate || endDate) {
+          if (startDate) {
+              dateFilter.$gte = new Date(startDate);
+          }
+          if (endDate) {
+              const endDateTime = new Date(endDate);
+              endDateTime.setHours(23, 59, 59, 999);
+              dateFilter.$lte = endDateTime;
+          }
+      } else {
+          // Default to today
+          const today = new Date();
+          const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+          const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+          dateFilter = {
+              $gte: startOfDay,
+              $lte: endOfDay
+          };
+      }
+
+      const pipeline = [
+          // Match orders by date
+          { 
+              $match: { 
+                  createdAt: dateFilter 
+              } 
+          },
+          
+          // Unwind products to work with individual items
+          { $unwind: "$allProduct" },
+          
+          // Lookup food item details
+          {
+              $lookup: {
+                  from: "fooditems", // Your food items collection name
+                  localField: "allProduct.foodItemId",
+                  foreignField: "_id",
+                  as: "foodItemDetails"
+              }
+          },
+          
+          { $unwind: "$foodItemDetails" },
+          
+          // Location filtering - only apply if locations parameter is provided and not empty
+          ...(locations && locations.length > 0 ? [{
+              $match: {
+                  delivarylocation: {
+                      $regex: new RegExp(`^(${Array.isArray(locations) ? locations.join('|') : locations}),`, 'i')
+                  }
+              }
+          }] : []),
+          
+          // Filter by hub - only apply if hubId parameter is provided
+          // Modified to check if hubId exists in locationPrice array OR use base price if no locationPrice exists
+          ...(hubId ? [{
+              $match: {
+                  $or: [
+                      { "foodItemDetails.locationPrice.hubId": hubId },
+                      { "foodItemDetails.locationPrice": { $exists: false } },
+                      { "foodItemDetails.locationPrice": { $size: 0 } }
+                  ]
+              }
+          }] : []),
+          
+          // Group by food item to calculate metrics
+          {
+              $group: {
+                  _id: "$allProduct.foodItemId",
+                  foodName: { $first: "$foodItemDetails.foodname" },
+                  basePrice: { $first: "$foodItemDetails.foodprice" },
+                  locationPrices: { $first: "$foodItemDetails.locationPrice" },
+                  totalQuantity: { $sum: "$allProduct.quantity" },
+                  totalOrders: { $sum: 1 },
+                  lastSoldTime: { $max: "$createdAt" },
+                  orders: { $push: {
+                      quantity: "$allProduct.quantity",
+                      createdAt: "$createdAt",
+                      delivaryLocation: "$delivarylocation"
+                  }}
+              }
+          },
+          
+          // Add calculated fields - price calculation based on hubId availability
+          {
+              $addFields: {
+                  relevantPrice: {
+                      $toDouble: {
+                          $cond: {
+                              if: { $and: [hubId, { $isArray: "$locationPrices" }] },
+                              then: {
+                                  $let: {
+                                      vars: {
+                                          hubPrice: {
+                                              $arrayElemAt: [
+                                                  {
+                                                      $filter: {
+                                                          input: "$locationPrices",
+                                                          cond: { $eq: ["$this.hubId", hubId] }
+                                                      }
+                                                  },
+                                                  0
+                                              ]
+                                          }
+                                      },
+                                      in: {
+                                          $cond: {
+                                              if: "$hubPrice",
+                                              then: "$hubPrice.foodprice",
+                                              else: "$basePrice"
+                                          }
+                                      }
+                                  }
+                              },
+                              else: "$basePrice"
+                          }
+                      }
+                  }
+              }
+          },
+          
+          // Calculate total amount - ensure both values are numbers
+          {
+              $addFields: {
+                  totalAmount: { 
+                      $multiply: [
+                          { $toDouble: "$totalQuantity" }, 
+                          { $toDouble: "$relevantPrice" }
+                      ] 
+                  }
+              }
+          },
+          
+          // Filter by search term - only apply if searchTerm is provided
+          ...(searchTerm ? [{
+              $match: {
+                  foodName: { $regex: searchTerm, $options: 'i' }
+              }
+          }] : []),
+          
+          // Sort by last sold time
+          {
+              $sort: {
+                  lastSoldTime: sortOrder === 'desc' ? -1 : 1
+              }
+          },
+          
+          // Project final structure
+          {
+              $project: {
+                  _id: 0,
+                  foodItemId: "$_id",
+                  foodName: 1,
+                  price: { $toDouble: "$relevantPrice" },
+                  quantity: { $toInt: "$totalQuantity" },
+                  totalOrders: 1,
+                  totalAmount: { $round: ["$totalAmount", 2] },
+                  lastSoldTime: 1
+              }
+          }
+      ];
+
+      const salesData = await customerCartModel.aggregate(pipeline);
+
+      return res.status(200).json({
+          success: true,
+          data: salesData,
+          totalCount: salesData.length,
+          filters: {
+              startDate: startDate || new Date().toISOString().split('T')[0],
+              endDate: endDate || new Date().toISOString().split('T')[0],
+              hubId: hubId || null,
+              locations: locations || null,
+              searchTerm: searchTerm || null,
+              sortOrder
+          }
+      });
+  } catch (error) {
+      console.error("Error generating sales report:", error);
+      return res.status(500).json({ 
+          success: false,
+          error: "Something went wrong while generating sales report" 
+      });
+  }
+}
   async getAllAppartmentOrder(req,res){
     try {
       const apartment=await customerCartModel.find({orderdelivarytype:"apartment"}).populate("allProduct.foodItemId");
@@ -416,6 +693,8 @@ class customerCart {
       
     }
   }
+
+  
 // Backend API Controller
 async getallordersfilter(req, res) {
   try {
