@@ -190,6 +190,10 @@ const customerorderSchema = new mongoose.Schema(
     driver: {
       type: String,
     },
+    totalOrder:{
+      type:Number,
+      default:0
+    },
 
   },
   { timestamps: true }

@@ -78,6 +78,27 @@ async function sendordSuccessfull(oderid, mobile) {
   }
 }
 
+async function saveOrderCount(order){
+try {
+ 
+  if(order){
+    const allOrder=await customerCartModel.find({customerId:order.customerId}).count();
+    order.totalOrder=allOrder||0;
+    await order.save()
+
+    const customer=await UserModel.findById(order.customerId);
+    if(customer){
+      customer.totalOrder=allOrder||0
+      await customer.save()
+    }
+
+  }
+
+} catch (error) {
+  console.log(error);
+  
+}
+}
 class customerCart {
 
   async addfoodorder(req, res) {
@@ -166,7 +187,8 @@ class customerCart {
       } else {
         let check = await newOrder.save();
         if (check) {
-          sendorderwhatsapp(check?.orderid, username, Mobilenumber, slot, delivarylocation)
+          sendorderwhatsapp(check?.orderid, username, Mobilenumber, slot, delivarylocation);
+       
 
           if (customerId) {
             await CartModel.findOneAndUpdate({ userId: customerId, status: "Added" }, { $set: { status: "COMPLETED" } })
@@ -290,6 +312,10 @@ class customerCart {
           }
         }
         io?.emit("newOrder", { orderid, delivarylocation, allTotal, username })
+        if(check){
+           saveOrderCount(check)
+        }
+       
         return res.status(200).json({ success: "Order placed and stock updated" });
       }
     } catch (error) {
