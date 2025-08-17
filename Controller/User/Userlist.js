@@ -11,6 +11,7 @@ const SelectAddressModel = require('../../Model/User/SelectedAddress');
 const phonepayModel = require('../../Model/User/phonepay');
 const { default: axios } = require("axios");
 const { uploadFile2 } = require("../../Midleware/AWS");
+const OrderModel = require('../../Model/Admin/Addorder');
 
 class Customer {
   async loginWithOtp(req, res) {
