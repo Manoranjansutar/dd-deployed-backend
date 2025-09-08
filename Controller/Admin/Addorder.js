@@ -1011,6 +1011,7 @@ async exportExcelOrder(req, res) {
       { header: 'Order ID', key: 'orderid', width: 15 },
       { header: 'Order Status', key: 'status', width: 15 },
       { header: 'Customer', key: 'customer', width: 20 },
+      { header: 'Total Order', key: 'totalorder', width: 20 },
       { header: 'Phone', key: 'phone', width: 15 },
       // { header: 'Hub', key: 'hub', width: 15 },
       { header: 'Slot Data', key: 'slotsdata', width: 15 },
@@ -1061,10 +1062,11 @@ async exportExcelOrder(req, res) {
 
         const row = worksheet.addRow({
           sno: globalIndex + 1,
-          date: moment(item?.createdAt).format("MM/DD/YYYY, hh:mm A"),
+          date: moment(item?.createdAt).format("DD-MM-YYYY, hh:mm A"),
           orderid: item?.orderid || 'N/A',
           status: item?.status || 'N/A',
           customer: item?.username || 'N/A',
+          totalorder: item?.totalOrder || 'N/A',
           phone: item?.Mobilenumber || 'N/A',
         
           slotsdata: item?.slot || 'N/A',
@@ -1105,7 +1107,7 @@ async exportExcelOrder(req, res) {
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="Corporate_Bookings_${moment().format('YYYY-MM-DD_HH-mm')}.xlsx"`
+      `attachment; filename="Corporate_Bookings_${moment().format('DD-MM-YYYY_HH-mm')}.xlsx"`
     );
 
     // Stream the Excel file directly to response
