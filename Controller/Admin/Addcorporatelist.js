@@ -13,7 +13,8 @@ class Addcorporate {
       prefixcode, 
       mobile,
       lunchSlots,
-      dinnerSlots
+      dinnerSlots,
+      deliverypoint
     } = req.body;
     
     let logo = req.file ? await uploadFile2(req.file, "Corporate") : "";
@@ -58,7 +59,8 @@ class Addcorporate {
         mobile,
         logo,
         lunchSlots: parsedLunchSlots,
-        dinnerSlots: parsedDinnerSlots
+        dinnerSlots: parsedDinnerSlots,
+        deliverypoint
       });
       
       if (
@@ -107,7 +109,8 @@ class Addcorporate {
       status,
       mobile,
       lunchSlots,
-      dinnerSlots
+      dinnerSlots,
+      deliverypoint
     } = req.body;
     
     let logo = req.file ? await uploadFile2(req.file, "Corporate") : "";
@@ -122,7 +125,7 @@ class Addcorporate {
     if (approximatetime) obj["approximatetime"] = parseInt(approximatetime);
     if (prefixcode) obj["prefixcode"] = prefixcode;
     if (status) obj["status"] = status;
-    
+    if (deliverypoint) obj["deliverypoint"] = deliverypoint;
     // Handle lunch slots
     if (lunchSlots) {
       try {

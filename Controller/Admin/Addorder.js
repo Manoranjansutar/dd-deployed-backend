@@ -1008,6 +1008,7 @@ async exportExcelOrder(req, res) {
     worksheet.columns = [
       { header: 'S.No', key: 'sno', width: 8 },
       { header: 'Date', key: 'date', width: 20 },
+      {header: 'Time', key: 'time', width: 20 },
       { header: 'Order ID', key: 'orderid', width: 15 },
       { header: 'Order Status', key: 'status', width: 15 },
       { header: 'Customer', key: 'customer', width: 20 },
@@ -1062,7 +1063,8 @@ async exportExcelOrder(req, res) {
 
         const row = worksheet.addRow({
           sno: globalIndex + 1,
-          date: moment(item?.createdAt).format("DD-MM-YYYY, hh:mm A"),
+          date: moment(item?.createdAt).format("DD-MM-YYYY"),
+          time: moment(item?.createdAt).format("hh:mm A"),
           orderid: item?.orderid || 'N/A',
           status: item?.status || 'N/A',
           customer: item?.username || 'N/A',
