@@ -101,7 +101,9 @@ app.use("/api/User", SelectedAddress);
 app.use("/api/cart",Addcart);
 app.use("/api/wallet",Wallet);
 app.use("/api/packer",PackerRoutes);
-
+app.use('/flyer',(req,res)=>{
+  return res.redirect('/')
+})
 io.on('connection', (socket) => {
   console.log('Admin connected:', socket.id);
   socket.on('disconnect', () => {
