@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const ObjectID=mongoose.Schema.Types.ObjectId;
 // MongoDB Schema
 const cartSchema = new mongoose.Schema({
-    cartId: { type: String, unique: true }, // Auto-generated cart ID
+    cartId: { type: String}, // Auto-generated cart ID
     userId: { type: String, required: true },
     username: { type: String },
     mobile: { type: String },

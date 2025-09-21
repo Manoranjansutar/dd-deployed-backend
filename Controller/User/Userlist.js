@@ -118,7 +118,7 @@ class Customer {
   // OTP Varification==========================
 
   async otpVarification(req, res) {
-    const { Mobile, otp } = req.body;
+    const { Mobile, otp, Fname} = req.body;
     console.log("Mobile, otp", Mobile, otp);
 
     try {
@@ -142,6 +142,7 @@ class Customer {
       if(!isPhonePresent){
           isPhonePresent = await CustomerModel.create({
           Mobile: Mobile,
+        
        });
         walletController.initializeWallet(isPhonePresent._id)
       }
@@ -151,6 +152,10 @@ class Customer {
         return res
           .status(400)
           .json({ error: "Your Account Is Blocked Pls Contact Admin" });
+      if(Fname){
+        isPhonePresent.Fname=Fname
+        isPhonePresent=await isPhonePresent.save()
+      }
 
       return res
         .status(200)
