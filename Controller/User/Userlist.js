@@ -1,4 +1,6 @@
 const CustomerModel = require("../../Model/User/Userlist");
+const OrderModel = require("../../Model/Admin/Addorder");
+const WalletModel = require("../../Model/User/Wallet");
 // const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const randomstring = require("randomstring");
@@ -6,12 +8,11 @@ const mongoose = require("mongoose");
 const otpModel = require("../../Model/User/Otp");
 const cron = require('node-cron');
 const walletController=require('./Wallet');
-const WalletModel=require('../../Model/User/Wallet')
+
 const SelectAddressModel = require('../../Model/User/SelectedAddress');
 const phonepayModel = require('../../Model/User/phonepay');
 const { default: axios } = require("axios");
 const { uploadFile2 } = require("../../Midleware/AWS");
-const OrderModel = require('../../Model/Admin/Addorder');
 
 class Customer {
   async loginWithOtp(req, res) {
@@ -439,13 +440,309 @@ class Customer {
 
   async getRegisterUser(req, res) {
     try {
-      const getRegisterDetails = await CustomerModel.find({}).sort({_id: -1  });
-      if (getRegisterDetails) {
-        return res.status(200).json({ success: getRegisterDetails });
+      const {
+        page = 1,
+        limit = 10,
+        search = "",
+        startDate = "",
+        endDate = "",
+        sortBy = "_id",
+        sortOrder = "desc"
+      } = req.query;
+
+      // Convert page and limit to numbers
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const skip = (pageNum - 1) * limitNum;
+
+      // Build query object
+      let query = {};
+
+      // Add search functionality - Fixed search to handle number conversion
+      if (search) {
+        const searchConditions = [
+          { Fname: { $regex: search, $options: "i" } },
+          { Email: { $regex: search, $options: "i" } }
+        ];
+        
+        // Add mobile search - handle both numeric and string inputs
+        const numericSearch = parseFloat(search);
+        if (!isNaN(numericSearch) && isFinite(numericSearch)) {
+          // Search for exact mobile number match
+          searchConditions.push({ Mobile: numericSearch });
+          // Also search for mobile numbers containing the search term (convert to string for regex)
+          searchConditions.push({ 
+            $expr: { 
+              $regexMatch: { 
+                input: { $toString: "$Mobile" }, 
+                regex: search, 
+                options: "i" 
+              } 
+            } 
+          });
+        } else {
+          // For non-numeric search, search mobile as string using $expr
+          searchConditions.push({ 
+            $expr: { 
+              $regexMatch: { 
+                input: { $toString: "$Mobile" }, 
+                regex: search, 
+                options: "i" 
+              } 
+            } 
+          });
+        }
+        
+        query.$or = searchConditions;
       }
-      console.log("getRegisterDetails", getRegisterDetails);
+
+      // Add date range filter
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999); // End of day
+        query.createdAt = { $gte: start, $lte: end };
+      }
+
+      // Build sort object
+      const sortObj = {};
+      sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+      // Get total count for pagination
+      const totalCount = await CustomerModel.countDocuments(query);
+
+      // Get paginated data
+      const users = await CustomerModel.find(query)
+        .sort(sortObj)
+        .skip(skip)
+        .limit(limitNum)
+        .lean();
+
+      // Get orders and wallets data for these users
+
+      // Get all orders for these users
+      const userIds = users.map(user => user._id);
+      console.log("User IDs for orders:", userIds);
+      
+      const orders = await OrderModel.find({ customerId: { $in: userIds } })
+        .select('customerId allTotal Placedon status')
+        .sort({ Placedon: -1 })
+        .lean();
+      
+      console.log("Found orders:", orders.length);
+
+      // Get all wallets for these users
+      const wallets = await WalletModel.find({ userId: { $in: userIds } })
+        .select('userId balance transactions')
+        .lean();
+      
+      console.log("Found wallets:", wallets.length);
+
+      // Process and enrich user data
+      const enrichedUsers = users.map(user => {
+        // Find user's orders
+        const userOrders = orders.filter(order => order.customerId.toString() === user._id.toString());
+        
+        // Find user's wallet - Fixed wallet lookup
+        const userWallet = wallets.find(wallet => wallet.userId.toString() === user._id.toString());
+        
+        console.log(`User ${user._id}: Orders=${userOrders.length}, Wallet=${userWallet ? 'Found' : 'Not Found'}`);
+
+        // Calculate order statistics
+        const totalOrders = userOrders.length;
+        const totalAmount = userOrders.reduce((sum, order) => sum + (order.allTotal || 0), 0);
+        const lastOrder = userOrders.length > 0 ? userOrders[0] : null;
+
+        // Calculate wallet statistics
+        const walletBalance = userWallet ? userWallet.balance : 0;
+        let walletExpiry = "N/A";
+        
+        if (userWallet && userWallet.transactions && userWallet.transactions.length > 0) {
+          const validExpiry = userWallet.transactions
+            .filter(txn => txn.expiryDate && new Date(txn.expiryDate) > new Date())
+            .sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate))[0];
+          
+          if (validExpiry) {
+            walletExpiry = new Date(validExpiry.expiryDate).toLocaleString();
+          }
+        }
+
+        return {
+          ...user,
+          totalOrders,
+          totalAmount: totalAmount.toFixed(2),
+          lastOrder: lastOrder ? {
+            date: new Date(lastOrder.Placedon).toLocaleString(),
+            amount: lastOrder.allTotal
+          } : null,
+          walletBalance: walletBalance.toFixed(2),
+          walletExpiry
+        };
+      });
+
+      // Calculate pagination info
+      const totalPages = Math.ceil(totalCount / limitNum);
+      const hasNextPage = pageNum < totalPages;
+      const hasPrevPage = pageNum > 1;
+
+      return res.status(200).json({
+        success: enrichedUsers,
+        pagination: {
+          currentPage: pageNum,
+          totalPages,
+          totalCount,
+          limit: limitNum,
+          hasNextPage,
+          hasPrevPage
+        }
+      });
     } catch (error) {
+      console.error("Error fetching users:", error);
       return res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+
+  // Export all users for Excel (chunked for large datasets)
+  async exportAllUsers(req, res) {
+    try {
+      const { search = "", startDate = "", endDate = "", page = 1, limit = 1000 } = req.query;
+
+      // Build query object
+      let query = {};
+
+      // Add search functionality - Fixed search to handle number conversion
+      if (search) {
+        const searchConditions = [
+          { Fname: { $regex: search, $options: "i" } },
+          { Email: { $regex: search, $options: "i" } }
+        ];
+        
+        // Add mobile search - handle both numeric and string inputs
+        const numericSearch = parseFloat(search);
+        if (!isNaN(numericSearch) && isFinite(numericSearch)) {
+          // Search for exact mobile number match
+          searchConditions.push({ Mobile: numericSearch });
+          // Also search for mobile numbers containing the search term (convert to string for regex)
+          searchConditions.push({ 
+            $expr: { 
+              $regexMatch: { 
+                input: { $toString: "$Mobile" }, 
+                regex: search, 
+                options: "i" 
+              } 
+            } 
+          });
+        } else {
+          // For non-numeric search, search mobile as string using $expr
+          searchConditions.push({ 
+            $expr: { 
+              $regexMatch: { 
+                input: { $toString: "$Mobile" }, 
+                regex: search, 
+                options: "i" 
+              } 
+            } 
+          });
+        }
+        
+        query.$or = searchConditions;
+      }
+
+      // Add date range filter
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt = { $gte: start, $lte: end };
+      }
+
+      // Get total count first
+      const totalCount = await CustomerModel.countDocuments(query);
+      
+      // Calculate pagination
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const skip = (pageNum - 1) * limitNum;
+      const totalPages = Math.ceil(totalCount / limitNum);
+
+      // Get chunked data
+      const users = await CustomerModel.find(query)
+        .select('_id Fname Mobile Email Address status employeeId BlockCustomer createdAt updatedAt profileImage')
+        .sort({ _id: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean();
+
+      // Get orders and wallets data
+
+      // Get all orders for these users
+      const userIds = users.map(user => user._id);
+      const orders = await OrderModel.find({ customerId: { $in: userIds } })
+        .select('customerId allTotal Placedon status')
+        .sort({ Placedon: -1 })
+        .lean();
+
+      // Get all wallets for these users
+      const wallets = await WalletModel.find({ userId: { $in: userIds } })
+        .select('userId balance transactions')
+        .lean();
+
+      // Process and enrich user data
+      const enrichedUsers = users.map(user => {
+        // Find user's orders
+        const userOrders = orders.filter(order => order.customerId.toString() === user._id.toString());
+        
+        // Find user's wallet - Fixed wallet lookup
+        const userWallet = wallets.find(wallet => wallet.userId.toString() === user._id.toString());
+
+        // Calculate order statistics
+        const totalOrders = userOrders.length;
+        const totalAmount = userOrders.reduce((sum, order) => sum + (order.allTotal || 0), 0);
+        const lastOrder = userOrders.length > 0 ? userOrders[0] : null;
+
+        // Calculate wallet statistics
+        const walletBalance = userWallet ? userWallet.balance : 0;
+        let walletExpiry = "N/A";
+        
+        if (userWallet && userWallet.transactions && userWallet.transactions.length > 0) {
+          const validExpiry = userWallet.transactions
+            .filter(txn => txn.expiryDate && new Date(txn.expiryDate) > new Date())
+            .sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate))[0];
+          
+          if (validExpiry) {
+            walletExpiry = new Date(validExpiry.expiryDate).toLocaleString();
+          }
+        }
+
+        return {
+          ...user,
+          totalOrders,
+          totalAmount: totalAmount.toFixed(2),
+          lastOrder: lastOrder ? {
+            date: new Date(lastOrder.Placedon).toLocaleString(),
+            amount: lastOrder.allTotal
+          } : null,
+          walletBalance: walletBalance.toFixed(2),
+          walletExpiry
+        };
+      });
+
+      res.status(200).json({
+        success: enrichedUsers,
+        pagination: {
+          currentPage: pageNum,
+          totalPages,
+          totalCount,
+          limit: limitNum,
+          hasNextPage: pageNum < totalPages
+        }
+      });
+    } catch (error) {
+      console.error("Error exporting users:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to export users"
+      });
     }
   }
 
