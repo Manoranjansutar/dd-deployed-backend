@@ -21,6 +21,10 @@ router.get('/getsettings', walletController.getwalletsetting);
 // Get transaction history
 router.get('/transactions/:userId', walletController.getTransactionHistory);
 router.get('/getAllWalletCompsny/:companyId', walletController.getAllWalletsByCompany);
+
+// Export all wallets for Excel
+router.get('/export-all', walletController.exportAllWallets);
+
 module.exports = router;
 
 // Webhook/Event handler for user registration

@@ -253,10 +253,109 @@ exports.getWallet = async (req, res) => {
 
 exports.getAllWallets = async (req, res) => {
   try {
-    let data = await Wallet.find().sort({ _id: -1 }).populate("userId");
-    res.status(200).json({ success: data });
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      sortBy = "_id",
+      sortOrder = "desc"
+    } = req.query;
+
+    // Convert page and limit to numbers
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build query object
+    let query = {};
+
+    // Add search functionality - Fixed to handle populated user data
+    if (search) {
+      // First, find users matching the search criteria
+      const CustomerModel = require('../../Model/User/Userlist');
+      const searchConditions = [
+        { Fname: { $regex: search, $options: "i" } },
+        { Email: { $regex: search, $options: "i" } }
+      ];
+      
+      // Add mobile search - handle both numeric and string inputs
+      const numericSearch = parseFloat(search);
+      if (!isNaN(numericSearch) && isFinite(numericSearch)) {
+        // Search for exact mobile number match
+        searchConditions.push({ Mobile: numericSearch });
+        // Also search for mobile numbers containing the search term (convert to string for regex)
+        searchConditions.push({ 
+          $expr: { 
+            $regexMatch: { 
+              input: { $toString: "$Mobile" }, 
+              regex: search, 
+              options: "i" 
+            } 
+          } 
+        });
+      } else {
+        // For non-numeric search, search mobile as string using $expr
+        searchConditions.push({ 
+          $expr: { 
+            $regexMatch: { 
+              input: { $toString: "$Mobile" }, 
+              regex: search, 
+              options: "i" 
+            } 
+          } 
+        });
+      }
+      
+      const matchingUsers = await CustomerModel.find({ $or: searchConditions })
+        .select('_id')
+        .lean();
+      
+      const userIds = matchingUsers.map(user => user._id);
+      
+      if (userIds.length > 0) {
+        query.userId = { $in: userIds };
+      } else {
+        // If no users found, return empty result
+        query.userId = { $in: [] };
+      }
+    }
+
+    // Build sort object
+    const sortObj = {};
+    sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+    // Get total count for pagination
+    const totalCount = await Wallet.countDocuments(query);
+
+    // Get paginated data
+    let data = await Wallet.find(query)
+      .sort(sortObj)
+      .skip(skip)
+      .limit(limitNum)
+      .populate("userId");
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalCount / limitNum);
+    const hasNextPage = pageNum < totalPages;
+    const hasPrevPage = pageNum > 1;
+
+    res.status(200).json({
+      success: data,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalCount,
+        limit: limitNum,
+        hasNextPage,
+        hasPrevPage
+      }
+    });
   } catch (error) {
     console.error("Error fetching wallets:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch wallets"
+    });
   }
 };
 
@@ -574,3 +673,110 @@ let companyId = req.params.companyId;
 
   }
 }
+
+// Export all wallets for Excel (chunked for large datasets)
+exports.exportAllWallets = async (req, res) => {
+  try {
+    const { search = "", page = 1, limit = 1000 } = req.query;
+
+    // Build query object
+    let query = {};
+
+    // Add search functionality - Fixed to handle populated user data
+    if (search) {
+      // First, find users matching the search criteria
+      const CustomerModel = require('../../Model/User/Userlist');
+      const searchConditions = [
+        { Fname: { $regex: search, $options: "i" } },
+        { Email: { $regex: search, $options: "i" } }
+      ];
+      
+      // Add mobile search - handle both numeric and string inputs
+      const numericSearch = parseFloat(search);
+      if (!isNaN(numericSearch) && isFinite(numericSearch)) {
+        // Search for exact mobile number match
+        searchConditions.push({ Mobile: numericSearch });
+        // Also search for mobile numbers containing the search term (convert to string for regex)
+        searchConditions.push({ 
+          $expr: { 
+            $regexMatch: { 
+              input: { $toString: "$Mobile" }, 
+              regex: search, 
+              options: "i" 
+            } 
+          } 
+        });
+      } else {
+        // For non-numeric search, search mobile as string using $expr
+        searchConditions.push({ 
+          $expr: { 
+            $regexMatch: { 
+              input: { $toString: "$Mobile" }, 
+              regex: search, 
+              options: "i" 
+            } 
+          } 
+        });
+      }
+      
+      const matchingUsers = await CustomerModel.find({ $or: searchConditions })
+        .select('_id')
+        .lean();
+      
+      const userIds = matchingUsers.map(user => user._id);
+      
+      if (userIds.length > 0) {
+        query.userId = { $in: userIds };
+      } else {
+        // If no users found, return empty result
+        query.userId = { $in: [] };
+      }
+    }
+
+    // Get total count first
+    const totalCount = await Wallet.countDocuments(query);
+    
+    // Calculate pagination
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+    const totalPages = Math.ceil(totalCount / limitNum);
+
+    // Get chunked data
+    let data = await Wallet.find(query)
+      .select('userId balance companyId createdAt updatedAt transactions')
+      .sort({ _id: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .populate("userId", "Mobile Fname Lname Email")
+      .lean();
+
+    // Transform data to include only essential fields for export
+    const exportData = data.map(wallet => ({
+      _id: wallet._id,
+      userId: wallet.userId,
+      balance: wallet.balance,
+      companyId: wallet.companyId,
+      createdAt: wallet.createdAt,
+      updatedAt: wallet.updatedAt,
+      transactions: wallet.transactions || []
+    }));
+
+    res.status(200).json({
+      success: exportData,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalCount,
+        limit: limitNum,
+        hasNextPage: pageNum < totalPages
+      }
+    });
+  } catch (error) {
+    console.error("Error exporting wallets:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to export wallets"
+    });
+  }
+};
