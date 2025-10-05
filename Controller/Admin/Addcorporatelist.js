@@ -14,15 +14,16 @@ class Addcorporate {
       mobile,
       lunchSlots,
       dinnerSlots,
-      deliverypoint
+      deliverypoint,
+      locationType
     } = req.body;
     
     let logo = req.file ? await uploadFile2(req.file, "Corporate") : "";
     
-    if(mobile){
+    if(mobile?.trim()){
       let checkMobileno = await Addcorparatemodal.findOne({ mobile: mobile });
       if(checkMobileno){
-        return res.status(500).json({ error: "Mobile Number already exist" });
+        return res.status(400).json({ error: "Mobile Number already exist" });
       }
     }
     
@@ -60,7 +61,7 @@ class Addcorporate {
         logo,
         lunchSlots: parsedLunchSlots,
         dinnerSlots: parsedDinnerSlots,
-        deliverypoint
+        deliverypoint,locationType
       });
       
       if (
@@ -78,7 +79,7 @@ class Addcorporate {
         });
       }
     } catch (error) {
-      console.log(error);
+      console.log("error=======>",error);
       return res.status(500).json({ error: "Internal Server Error" });
     }
   }
@@ -110,7 +111,7 @@ class Addcorporate {
       mobile,
       lunchSlots,
       dinnerSlots,
-      deliverypoint
+      deliverypoint,locationType
     } = req.body;
     
     let logo = req.file ? await uploadFile2(req.file, "Corporate") : "";
@@ -126,6 +127,7 @@ class Addcorporate {
     if (prefixcode) obj["prefixcode"] = prefixcode;
     if (status) obj["status"] = status;
     if (deliverypoint) obj["deliverypoint"] = deliverypoint;
+    if (locationType) obj["locationType"]=locationType
     // Handle lunch slots
     if (lunchSlots) {
       try {

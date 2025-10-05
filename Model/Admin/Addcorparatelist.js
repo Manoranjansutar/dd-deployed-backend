@@ -60,6 +60,9 @@ const Addcorporateaddress = new Schema({
     deliverypoint: {
         type: String,
     },
+    locationType:{
+        type:String,
+    },
     status: {
         type: Boolean,
         default: true,
