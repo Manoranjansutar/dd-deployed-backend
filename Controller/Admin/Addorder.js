@@ -370,17 +370,31 @@ class customerCart {
   async getorderNotRatedByUserID(req, res) {
     try {
       const { customerId } = req.params;
-      await UserModel.findOneAndUpdate(
+  
+      // Update last login date
+       UserModel.findOneAndUpdate(
         { _id: customerId },
         { $set: { lastLogin: new Date().toISOString().split('T')[0] } }
       );
-      // Find the order by orderId
-      const order = await customerCartModel.findOne({ customerId: customerId, ratted: false, status: "Delivered" }).populate("allProduct.foodItemId");
-
+  
+      // Calculate last week's date
+      const lastWeek = new Date();
+      lastWeek.setDate(lastWeek.getDate() - 7);
+  
+      // Find order delivered in last week and not rated
+      const order = await customerCartModel
+        .findOne({
+          customerId: customerId,
+          ratted: false,
+          status: "Delivered",
+          createdAt: { $gte: lastWeek }  // only from last 7 days
+        })
+        .populate("allProduct.foodItemId");
+  
       if (!order) {
-        return res.status(400).json({ message: "Order not found" });
+        return res.status(400).json({ message: "Order not found in last week" });
       }
-
+  
       res.status(200).json({
         message: "Order retrieved successfully",
         order,
@@ -389,6 +403,7 @@ class customerCart {
       res.status(500).json({ message: "Failed to retrieve order", error });
     }
   }
+  
 
 
   async makeRateOfOrder(req, res) {
