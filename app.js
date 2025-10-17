@@ -65,6 +65,11 @@ const PackerRoutes=require("./Routes/Packer/PackerRoute")
 const HubRoute=require('./Routes/Packer/HubRoute')
 const BagRoutes=require('./Routes/Admin/Bag');
 const ReasonRoutes=require('./Routes/Admin/Reasons')
+const CategoryRoutes = require('./Routes/Admin/AdminCategory')
+const PackingRoutes = require('./Routes/Packer/Packing')
+
+
+
 //Admin
 app.use("/api/admin", login);
 app.use("/api/admin", HomeBanner);
@@ -89,6 +94,7 @@ app.use('/api/admin', reportRoutes);
 app.use('/api/Hub',HubRoute)
 app.use('/api/admin',BagRoutes)
 app.use('/api/admin',ReasonRoutes)
+app.use('/api/admin', CategoryRoutes)
 
 
 //User
@@ -101,6 +107,9 @@ app.use("/api/User", SelectedAddress);
 app.use("/api/cart",Addcart);
 app.use("/api/wallet",Wallet);
 app.use("/api/packer",PackerRoutes);
+app.use("/api/packer/packing", PackingRoutes);
+
+
 app.use('/flyer',(req,res)=>{
   return res.redirect('/')
 })
