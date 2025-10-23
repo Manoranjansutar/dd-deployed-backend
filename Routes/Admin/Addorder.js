@@ -14,6 +14,8 @@ router.get("/getorderNotRatedByUserID/:customerId",CartController.getorderNotRat
 router.put("/makeRateOfOrder",CartController.makeRateOfOrder);
 router.get('/getAllOrdersByCompanyId/:companyId', CartController.getAllOrderByCompany);
 router.get('/getPackerOrders',CartController.getPackerOrders);
+router.get('/getPackerOrders2',CartController.getPackerOrders2);
+
 router.put("/updatePackerOrder",CartController.updatePackerOrder);
 router.get("/getDrivers",CartController.getDrivers);
 router.put("/updateMultipleOrderStatus",CartController.updateMultipleOrderStatus);

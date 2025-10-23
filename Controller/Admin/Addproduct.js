@@ -84,6 +84,7 @@ class AddRestaurantdata {
       const {
         foodname,
         foodcategory,
+         categoryName,
         fooddescription,
         foodprice,
         foodmealtype,
@@ -129,6 +130,7 @@ class AddRestaurantdata {
       // Dynamically add fields to the update object if they are provided
       if (foodname) obj["foodname"] = foodname;
       if (foodcategory) obj["foodcategory"] = foodcategory;
+          if (categoryName) obj["categoryName"] = categoryName;
       if (fooddescription) obj["fooddescription"] = fooddescription;
       if (foodprice) obj["foodprice"] = foodprice;
       if (foodmealtype) obj["foodmealtype"] = foodmealtype;

@@ -10,6 +10,9 @@ const AddRestaurants = new Schema(
     foodcategory: {
       type: String,
     },
+     categoryName:{
+       type: String,
+    },
     fooddescription: {
       type: String,
     },
