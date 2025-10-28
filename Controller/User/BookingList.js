@@ -38,6 +38,9 @@ class Order {
       couponPr,
       tax,
       deliverydate,
+      studentName,
+      studentClass,
+      studentSection,
     } = req.body;
     // console.log("check",allProduct);
 
@@ -72,6 +75,9 @@ class Order {
         couponPr,
         tax,
         deliverydate,
+         studentName,
+      studentClass,
+      studentSection,
         type: "customer",
       });
       if (data) {

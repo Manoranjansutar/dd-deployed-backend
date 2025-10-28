@@ -29,6 +29,7 @@ router.get("/export-all", CutomerController.exportAllUsers)
 router.put("/blockuser/:id", CutomerController.BlockUser);
 router.get('/getUserByCompany/:companyId', CutomerController.getUserByCompany);
 router.delete('/deleteUser/:id', CutomerController.deleteUser);
+router.post('/addStudentInformation', CutomerController.addOrUpdateStudentInfo);
 
 
 module.exports = router;

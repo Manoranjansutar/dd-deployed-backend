@@ -194,6 +194,9 @@ const customerorderSchema = new mongoose.Schema(
       type:Number,
       default:0
     },
+     studentName: { type: String },
+  studentClass: { type: String },
+  studentSection: { type: String },
 
   },
   { timestamps: true }

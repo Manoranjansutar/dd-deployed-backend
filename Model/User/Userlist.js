@@ -29,6 +29,23 @@ const Customer = new Schema(
     Address: {
       type: String,
     },
+
+    addresses: [
+    {
+      locationType: { type: String, enum: ['home', 'pg/apartment', 'work', 'school'] },
+      homeAddress: { type: String },
+      workAddress: { type: String },
+      pgAddress: { type: String },
+      schoolAddress: { type: String },
+    }
+  ],
+
+studentInformation: {
+  studentName: { type: String },
+  studentClass: { type: String },
+  studentSection: { type: String },
+},
+
   
     profileImage: {
       type: String,

@@ -147,6 +147,12 @@ const customerorderSchema = new mongoose.Schema(
     deliveryBoyimage: {
       type: String,
     },
+   
+  studentName: { type: String },
+  studentClass: { type: String },
+  studentSection: { type: String },
+
+
   },
   { timestamps: true }
 );

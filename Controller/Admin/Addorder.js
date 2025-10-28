@@ -136,7 +136,10 @@ class customerCart {
       cart_id,
       companyId,
       companyName,
-      customerType
+      customerType,
+      studentName,
+      studentClass,
+      studentSection,
 
     } = req.body;
 
@@ -179,7 +182,10 @@ class customerCart {
         cart_id,
         companyId,
         companyName,
-        customerType
+        customerType,
+        studentName,
+      studentClass,
+      studentSection,
       });
 
       if (!customerId) {

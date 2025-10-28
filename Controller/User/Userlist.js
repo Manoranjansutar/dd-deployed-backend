@@ -807,6 +807,99 @@ class Customer {
       res.status(500).json({ error: "Internal server error" });
     }
   }
+
+  // ✅ Add student information for a customer
+// async addStudentInformation(req, res) {
+//   try {
+//     const { customerId, studentName, studentClass, studentSection } = req.body;
+
+//     // Basic validation
+//     if (!customerId || !studentName || !studentClass || !studentSection) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "All fields are required: customerId, studentName, studentClass, studentSection",
+//       });
+//     }
+
+//     // Find customer
+//     const customer = await CustomerModel.findById(customerId);
+//     if (!customer) {
+//       return res.status(404).json({ success: false, message: "Customer not found" });
+//     }
+
+//     // Create new student info
+//     const newStudent = {
+//       studentName,
+//       studentClass,
+//       studentSection,
+//     };
+
+//     // Push to array
+//     customer.studentInformation.push(newStudent);
+
+//     // Save updated document
+//     await customer.save();
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Student information added successfully",
+//       data: customer.studentInformation,
+//     });
+//   } catch (error) {
+//     console.error("Error adding student info:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error while adding student information",
+//       error: error.message,
+//     });
+//   }
+// };
+
+async addOrUpdateStudentInfo (req, res)  {
+  try {
+    const { customerId, studentName, studentClass, studentSection } = req.body;
+
+    if (!customerId || !studentName || !studentClass || !studentSection) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
+    const updatedCustomer = await CustomerModel.findByIdAndUpdate(
+      customerId,
+      {
+        studentInformation: {
+          studentName,
+          studentClass,
+          studentSection,
+        },
+      },
+      { new: true } // return updated document
+    );
+
+    if (!updatedCustomer) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Student information added/updated successfully",
+      data: updatedCustomer.studentInformation,
+    });
+  } catch (error) {
+    console.error("Error adding/updating student info:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while updating student info",
+      error: error.message,
+    });
+  }
+};
+
 }
 
 function formatDate(date) {
@@ -919,6 +1012,11 @@ cron.schedule('2 0 * * *', async () => {
     console.error('Error in subsidy addition job:', error);
   }
 });
+
+
+
+
+
 
 const CutomerController = new Customer();
 module.exports = CutomerController;
